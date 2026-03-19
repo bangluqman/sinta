@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="institutional">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SINTA Dashboard — Universitas Yudharta Pasuruan</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+[data-theme="institutional"]{--bg:#f4f6f9;--bg-2:#fff;--bg-3:#eef1f6;--sb:#1a2744;--sb-text:#c8d3ea;--sb-act-bg:rgba(99,179,237,.15);--sb-act:#63b3ed;--ac:#1e3a8a;--ac2:#2563eb;--acl:#dbeafe;--gr:#059669;--grl:#d1fae5;--am:#d97706;--aml:#fef3c7;--ro:#e11d48;--rol:#ffe4e6;--vi:#7c3aed;--vil:#ede9fe;--sk:#0284c7;--skl:#e0f2fe;--t1:#0f172a;--t2:#374151;--t3:#6b7280;--t4:#9ca3af;--bd:#e2e8f0;--bd2:#cbd5e1;--sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);--shm:0 4px 12px rgba(0,0,0,.08);--r:10px;--rs:6px;}
+[data-theme="academic"]{--bg:#faf7f2;--bg-2:#fffef9;--bg-3:#f2ede4;--sb:#2d2416;--sb-text:#c9b99a;--sb-act-bg:rgba(180,130,60,.15);--sb-act:#d4a059;--ac:#5c3d11;--ac2:#92600a;--acl:#fef3c7;--gr:#3d6b2e;--grl:#d7f0cc;--am:#b45309;--aml:#fef3c7;--ro:#9f1239;--rol:#ffe4e6;--vi:#6d28d9;--vil:#ede9fe;--sk:#1d6c8e;--skl:#ddf4ff;--t1:#1c1208;--t2:#3d2c10;--t3:#7c6548;--t4:#a8926f;--bd:#e5d9c5;--bd2:#d0bc9e;--sh:0 1px 3px rgba(80,50,10,.08),0 1px 2px rgba(80,50,10,.04);--shm:0 4px 12px rgba(80,50,10,.1);--r:10px;--rs:6px;}
+[data-theme="fresh"]{--bg:#f0faf7;--bg-2:#fff;--bg-3:#e4f5ef;--sb:#134e40;--sb-text:#a7d9cc;--sb-act-bg:rgba(52,211,153,.15);--sb-act:#34d399;--ac:#065f46;--ac2:#059669;--acl:#d1fae5;--gr:#059669;--grl:#d1fae5;--am:#d97706;--aml:#fef3c7;--ro:#e11d48;--rol:#ffe4e6;--vi:#0d9488;--vil:#ccfbf1;--sk:#0891b2;--skl:#cffafe;--t1:#052e1c;--t2:#14532d;--t3:#4d7c6a;--t4:#6eafa0;--bd:#b7e4d8;--bd2:#86cfbe;--sh:0 1px 3px rgba(6,95,70,.07),0 1px 2px rgba(6,95,70,.04);--shm:0 4px 12px rgba(6,95,70,.08);--r:10px;--rs:6px;}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--t1);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;transition:background .3s,color .3s}
+.shell{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sb{width:248px;background:var(--sb);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:background .3s}
+.sb-logo{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+.logo-uni{font-family:'Playfair Display',serif;font-size:14px;color:#fff;line-height:1.4;font-weight:600}
+.logo-sub{font-size:10px;color:var(--sb-text);margin-top:3px;letter-spacing:.04em}
+.logo-badge{display:inline-flex;align-items:center;gap:5px;margin-top:9px;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--sb-act);background:var(--sb-act-bg);border:1px solid var(--sb-act);border-radius:4px;padding:3px 8px}
+.logo-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--sb-act);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.sb-nav{padding:12px 10px;flex:1;overflow-y:auto}
+.nl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.28);padding:10px 10px 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--rs);cursor:pointer;font-size:12.5px;font-weight:500;color:var(--sb-text);border:1px solid transparent;transition:all .15s;margin-bottom:1px}
+.ni:hover{background:rgba(255,255,255,.07);color:#fff}
+.ni.active{background:var(--sb-act-bg);border-color:rgba(255,255,255,.1);color:var(--sb-act)}
+.ni-icon{font-size:13px;width:16px;text-align:center;flex-shrink:0}
+.ni-cnt{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9.5px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.35);padding:1px 6px;border-radius:20px}
+.ni.active .ni-cnt{background:var(--sb-act-bg);color:var(--sb-act)}
+
+.sb-bot{padding:12px 10px 18px;border-top:1px solid rgba(255,255,255,.07)}
+.yl,.tl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:7px}
+.ypills{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px}
+.yp{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.35);cursor:pointer;transition:all .15s}
+.yp:hover{border-color:rgba(255,255,255,.4);color:rgba(255,255,255,.65)}
+.yp.active{background:var(--sb-act);border-color:var(--sb-act);color:var(--sb);font-weight:700}
+.tsw{display:flex;gap:7px}
+.ts{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s}
+.ts:hover{transform:scale(1.1)}
+.ts.active{border-color:#fff}
+.ts[data-t="institutional"]{background:linear-gradient(135deg,#1e3a8a,#63b3ed)}
+.ts[data-t="academic"]{background:linear-gradient(135deg,#5c3d11,#d4a059)}
+.ts[data-t="fresh"]{background:linear-gradient(135deg,#065f46,#34d399)}
+
+/* MAIN */
+.main{margin-left:248px;flex:1;padding:26px 28px 60px;transition:background .3s}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px}
+.tb-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--t1);line-height:1.2}
+.tb-sub{font-size:12px;color:var(--t3);margin-top:3px}
+.tb-meta{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.chip{font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:5px 11px;background:var(--bg-2);border:1px solid var(--bd);border-radius:20px;color:var(--t3);box-shadow:var(--sh)}
+.chip.ok{background:var(--grl);color:var(--gr);border-color:var(--gr)}
+.chip.warn{background:var(--aml);color:var(--am);border-color:var(--am)}
+
+/* SECTION HD */
+.shd{display:flex;align-items:center;gap:9px;margin:24px 0 13px;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3)}
+.shd::after{content:'';flex:1;height:1px;background:var(--bd)}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+.kc{background:var(--bg-2);border:1px solid var(--bd);border-radius:var(--r);padding:16px 16px 14px;box-shadow:var(--sh);position:relative;overflow:hidden;transition:box-shadow .2s,transform .2s,background .3s;animation:su .4s ease both}
+.kc:hover{box-shadow:var(--shm);transform:translateY(-2px)}
+.kc::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--kc,var(--ac2));border-radius:3px 0 0 3px}
+@keyframes su{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.kc:nth-child(1){animation-delay:.04s}.kc:nth-child(2){animation-delay:.08s}.kc:nth-child(3){animation-delay:.12s}.kc:nth-child(4){animation-delay:.16s}
+.kc:nth-child(5){animation-delay:.20s}.kc:nth-child(6){animation-delay:.24s}.kc:nth-child(7){animation-delay:.28s}.kc:nth-child(8){animation-delay:.32s}
+.kc-ir{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.kc-em{font-size:17px}
+.kc-tag{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t4);background:var(--bg-3);padding:2px 7px;border-radius:20px}
+.kc-num{font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:var(--t1);line-height:1;letter-spacing:-.02em}
+.kc-unit{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;color:var(--t3);font-weight:400;margin-left:2px}
+.kc-lbl{font-size:11px;font-weight:500;color:var(--t2);margin:3px 0 7px}
+.kd{display:inline-flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:20px}
+.du{color:var(--gr);background:var(--grl)}.dd{color:var(--ro);background:var(--rol)}.df{color:var(--t3);background:var(--bg-3)}.dn{color:var(--vi);background:var(--vil)}
+
+/* CARDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.g3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:13px}
+.g3e{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px}
+.card{background:var(--bg-2);border:1px solid var(--bd);border-radius:var(--r);padding:20px;box-shadow:var(--sh);transition:background .3s,border .3s;animation:su .45s ease both}
+.card:nth-child(1){animation-delay:.06s}.card:nth-child(2){animation-delay:.12s}.card:nth-child(3){animation-delay:.18s}
+.ch{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+.ct{font-size:13px;font-weight:600;color:var(--t1)}.cs{font-size:11px;color:var(--t3);margin-top:2px}
+
+/* DONUT */
+.dw{display:flex;align-items:center;gap:18px}
+.dl{flex:1;display:flex;flex-direction:column;gap:6px}
+.dlr{display:flex;align-items:center;justify-content:space-between;font-size:11.5px}
+.dll{display:flex;align-items:center;gap:6px;color:var(--t2)}
+.dld{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.dln{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t1);font-weight:500}
+
+/* TABLE */
+.tw{background:var(--bg-2);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);animation:su .45s ease .1s both}
+.tth{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--bd)}
+.tth h3{font-size:13px;font-weight:600;color:var(--t1)}
+.sb-inp{display:flex;align-items:center;gap:6px;background:var(--bg-3);border:1px solid var(--bd);border-radius:var(--rs);padding:5px 11px;transition:border .2s}
+.sb-inp:focus-within{border-color:var(--ac2)}
+.sb-inp input{background:none;border:none;outline:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--t1);width:180px}
+.sb-inp input::placeholder{color:var(--t4)}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--bg-3)}
+th{padding:9px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);white-space:nowrap;border-bottom:1px solid var(--bd)}
+td{padding:10px 14px;font-size:12px;color:var(--t2);border-bottom:1px solid var(--bd);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{transition:background .1s}
+tbody tr:hover td{background:var(--bg-3)}
+.tdm{color:var(--t1);font-weight:500;max-width:280px;line-height:1.4}
+.tds{font-size:10.5px;color:var(--t4);margin-top:2px;font-weight:400}
+.tdn{font-family:'JetBrains Mono',monospace;font-size:11.5px}
+
+/* BADGES */
+.b{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:.02em}
+.bs1{background:var(--grl);color:var(--gr)}.bs2{background:var(--skl);color:var(--sk)}.bs3{background:var(--vil);color:var(--vi)}
+.bs4{background:var(--aml);color:var(--am)}.bs5,.bs6{background:var(--rol);color:var(--ro)}
+.bq1{background:var(--grl);color:var(--gr)}.bq2{background:var(--skl);color:var(--sk)}.bq3{background:var(--aml);color:var(--am)}.bq4{background:var(--rol);color:var(--ro)}
+.bok{background:var(--grl);color:var(--gr)}.bwn{background:var(--aml);color:var(--am)}.bnu{background:var(--bg-3);color:var(--t3)}
+
+/* MINI */
+.mr{display:flex;gap:11px;margin-bottom:18px;flex-wrap:wrap}
+.ms{background:var(--bg-2);border:1px solid var(--bd);border-radius:var(--rs);padding:11px 16px;box-shadow:var(--sh);display:flex;flex-direction:column}
+.msv{font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:var(--t1);line-height:1}
+.msl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-top:3px;font-weight:600}
+
+/* PAGE */
+.page{display:none}.page.active{display:block}
+
+/* LOADING */
+.lov{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s}
+.lov.hidden{opacity:0;pointer-events:none}
+.spin{width:36px;height:36px;border:3px solid var(--bd);border-top-color:var(--ac2);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ltx{font-size:13px;color:var(--t3);font-family:'JetBrains Mono',monospace}
+
+/* CONFIG */
+.cfg{background:var(--acl);border:1px solid var(--ac2);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;font-size:12.5px;color:var(--ac);line-height:1.7}
+.cfg strong{font-weight:700}
+.cfg code,.ci code{font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(0,0,0,.07);padding:1px 5px;border-radius:3px}
+.ci{display:flex;gap:8px;margin-top:10px}
+.ci input{flex:1;padding:7px 12px;border:1px solid var(--ac2);border-radius:var(--rs);font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--t1);background:var(--bg-2);outline:none}
+.btn{padding:8px 18px;border-radius:var(--rs);border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;transition:all .15s}
+.btp{background:var(--ac2);color:#fff}.btp:hover{opacity:.88}
+.bto{background:var(--bg-2);border:1px solid var(--bd);color:var(--t2)}.bto:hover{border-color:var(--ac2);color:var(--ac2)}
+
+/* REPO TREE */
+.rt{background:var(--bg-3);border:1px solid var(--bd);border-radius:var(--r);padding:16px 20px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--t2);line-height:1.9}
+.rdir{color:var(--ac2);font-weight:600}.rnote{color:var(--t4);font-size:10.5px}
+
+/* FILE GRID */
+.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:20px}
+.fs{background:var(--bg-2);border:1px solid var(--bd);border-radius:var(--rs);padding:12px;display:flex;align-items:flex-start;gap:9px;box-shadow:var(--sh)}
+.fs.loaded{border-left:3px solid var(--gr)}.fs.missing{border-left:3px solid var(--bd);opacity:.55}
+.fi{font-size:18px}.fn{font-size:11.5px;font-weight:600;color:var(--t1)}.fm{font-size:10.5px;color:var(--t3);margin-top:2px}
+
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px}
+@media(max-width:1280px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:960px){.sb{width:210px}.main{margin-left:210px;padding:18px 16px 60px}.g2,.g3e{grid-template-columns:1fr}.fg{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="lov" id="lov"><div class="spin"></div><div class="ltx" id="ltx">Memuat data...</div></div>
+
+<div class="shell">
+<aside class="sb">
+  <div class="sb-logo">
+    <div class="logo-uni">Universitas Yudharta<br>Pasuruan</div>
+    <div class="logo-sub">SINTA Research Dashboard</div>
+    <div class="logo-badge" id="sbBadge">Memuat...</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nl">Menu</div>
+    <a class="ni active" onclick="nav(this,'overview')"><span class="ni-icon">◈</span>Overview</a>
+    <a class="ni" onclick="nav(this,'pub')"><span class="ni-icon">📄</span>Publikasi<span class="ni-cnt" id="nc-pub">–</span></a>
+    <a class="ni" onclick="nav(this,'intl')"><span class="ni-icon">🔬</span>Scopus &amp; WoS<span class="ni-cnt" id="nc-intl">–</span></a>
+    <a class="ni" onclick="nav(this,'book')"><span class="ni-icon">📚</span>Buku<span class="ni-cnt" id="nc-book">–</span></a>
+    <a class="ni" onclick="nav(this,'res')"><span class="ni-icon">🔭</span>Penelitian<span class="ni-cnt" id="nc-res">–</span></a>
+    <a class="ni" onclick="nav(this,'com')"><span class="ni-icon">🤝</span>Pengabdian<span class="ni-cnt" id="nc-com">–</span></a>
+    <a class="ni" onclick="nav(this,'hki')"><span class="ni-icon">🏆</span>HKI / IPR<span class="ni-cnt" id="nc-ipr">–</span></a>
+    <div class="nl">Kelola</div>
+    <a class="ni" onclick="nav(this,'cfg')"><span class="ni-icon">⚙</span>Pengaturan &amp; Data</a>
+  </nav>
+  <div class="sb-bot">
+    <div class="yl">Filter Tahun</div>
+    <div class="ypills" id="ypills"><span class="yp active" data-year="all" onclick="setYear(this)">All</span></div>
+    <div class="tl" style="margin-top:12px">Tema</div>
+    <div class="tsw">
+      <div class="ts active" data-t="institutional" onclick="setTheme(this)"></div>
+      <div class="ts" data-t="academic" onclick="setTheme(this)"></div>
+      <div class="ts" data-t="fresh" onclick="setTheme(this)"></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+
+<!-- OVERVIEW -->
+<div id="page-overview" class="page active">
+  <div class="topbar">
+    <div><div class="tb-title">Ringkasan Capaian</div><div class="tb-sub">Seluruh indikator riset &amp; publikasi · Universitas Yudharta Pasuruan</div></div>
+    <div class="tb-meta"><span class="chip" id="chipYear">All Years</span><span class="chip warn" id="chipSt">Memuat...</span></div>
+  </div>
+  <div class="shd">8 Indikator Utama SINTA</div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+  <div class="shd">Tren &amp; Distribusi</div>
+  <div class="g3">
+    <div class="card"><div class="ch"><div><div class="ct">Volume Publikasi per Tahun</div><div class="cs">GS · Garuda · Scopus · WoS</div></div></div><canvas id="cTrend" height="200"></canvas></div>
+    <div class="card"><div class="ch"><div><div class="ct">Akreditasi Garuda</div><div class="cs" id="garSub">–</div></div></div><div class="dw"><canvas id="cGarD" width="110" height="110"></canvas><div class="dl" id="garLeg"></div></div></div>
+    <div class="card"><div class="ch"><div><div class="ct">Quartile Scopus</div><div class="cs" id="scSub">–</div></div></div><div class="dw"><canvas id="cScD" width="110" height="110"></canvas><div class="dl" id="scLeg"></div></div></div>
+  </div>
+  <div class="g2" style="margin-top:13px">
+    <div class="card"><div class="ch"><div><div class="ct">Dana Penelitian &amp; Pengabdian</div><div class="cs">Juta Rp per tahun</div></div></div><canvas id="cDana" height="190"></canvas></div>
+    <div class="card"><div class="ch"><div><div class="ct">Sitasi Google Scholar</div><div class="cs">Kumulatif per tahun</div></div></div><canvas id="cCit" height="190"></canvas></div>
+  </div>
+  <div class="shd">Top Publikasi Tersitasi</div>
+  <div class="tw"><div class="tth"><h3>10 Paling Banyak Disitasi</h3><div class="sb-inp">🔍<input type="text" placeholder="Cari..." oninput="ft('tTop',this.value)"></div></div>
+  <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Penulis</th><th>DB</th><th>Akred</th><th style="text-align:right">Sitasi</th></tr></thead><tbody id="tTop"></tbody></table></div></div>
+</div>
+
+<!-- PUBLIKASI -->
+<div id="page-pub" class="page">
+  <div class="topbar"><div><div class="tb-title">Publikasi</div><div class="tb-sub">Google Scholar &amp; Garuda</div></div></div>
+  <div class="mr" id="pubMr"></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><div><div class="ct">Google Scholar — Per Akreditasi</div></div></div><canvas id="cGsAk" height="210"></canvas></div>
+    <div class="card"><div class="ch"><div><div class="ct">Garuda — Distribusi Bulanan</div></div></div><canvas id="cGarBln" height="210"></canvas></div>
+  </div>
+  <div class="shd" style="margin-top:20px">Daftar Google Scholar</div>
+  <div class="tw"><div class="tth"><h3 id="gsTitle">Google Scholar</h3><div class="sb-inp">🔍<input type="text" placeholder="Cari..." oninput="ft('tGs',this.value)"></div></div>
+  <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Jurnal</th><th>Penulis</th><th>Akred</th><th style="text-align:right">Sitasi</th></tr></thead><tbody id="tGs"></tbody></table></div></div>
+</div>
+
+<!-- SCOPUS & WOS -->
+<div id="page-intl" class="page">
+  <div class="topbar"><div><div class="tb-title">Scopus &amp; Web of Science</div><div class="tb-sub">Publikasi terindeks internasional bereputasi</div></div></div>
+  <div class="mr" id="intlMr"></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><div><div class="ct">Tren Scopus &amp; WoS per Tahun</div></div></div><canvas id="cIntlTr" height="220"></canvas></div>
+    <div class="card"><div class="ch"><div><div class="ct">Scopus — Distribusi Quartile</div></div></div><canvas id="cScQ" height="220"></canvas></div>
+  </div>
+  <div class="shd" style="margin-top:20px">Daftar Scopus</div>
+  <div class="tw"><div class="tth"><h3 id="scTitle">Scopus</h3><div class="sb-inp">🔍<input type="text" placeholder="Cari..." oninput="ft('tSc',this.value)"></div></div>
+  <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Jurnal</th><th>Penulis</th><th>Q</th><th style="text-align:right">Sitasi</th></tr></thead><tbody id="tSc"></tbody></table></div></div>
+  <div class="shd" style="margin-top:20px">Daftar Web of Science</div>
+  <div class="tw"><div class="tth"><h3 id="wosTitle">WoS</h3></div>
+  <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Jurnal</th><th>Penulis</th><th>Core</th><th style="text-align:right">Sitasi</th></tr></thead><tbody id="tWos"></tbody></table></div></div>
+</div>
+
+<!-- BUKU -->
+<div id="page-book" class="page">
+  <div class="topbar"><div><div class="tb-title">Buku</div><div class="tb-sub">Buku referensi, ajar, dan monograf</div></div></div>
+  <div class="mr" id="bookMr"></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><div><div class="ct">Volume Buku per Tahun</div></div></div><canvas id="cBkTr" height="220"></canvas></div>
+    <div class="card"><div class="ch"><div><div class="ct">Kategori Buku</div></div></div><canvas id="cBkKt" height="220"></canvas></div>
+  </div>
+  <div class="shd" style="margin-top:20px">Daftar Buku</div>
+  <div class="tw"><div class="tth"><h3 id="bookTitle">Buku</h3><div class="sb-inp">🔍<input type="text" placeholder="Cari..." oninput="ft('tBk',this.value)"></div></div>
+  <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Penulis</th><th>Penerbit</th><th>Kategori</th><th>Tahun</th></tr></thead><tbody id="tBk"></tbody></table></div></div>
+</div>
+
+<!-- PENELITIAN -->
+<div id="page-res" class="page">
+  <div class="topbar"><div><div class="tb-title">Penelitian</div><div class="tb-sub">Penelitian kompetitif nasional</div></div></div>
+  <div class="mr" id="resMr"></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><div><div class="ct">Dana Penelitian per Tahun (Juta Rp)</div></div></div><canvas id="cResDn" height="220"></canvas></div>
+    <div class="card"><div class="ch"><div><div class="ct">Bidang Fokus</div></div></div><canvas id="cResBd" height="220"></canvas></div>
+  </div>
+  <div class="shd" style="margin-top:20px">Daftar Penelitian</div>
+  <div class="tw"><div class="tth"><h3 id="resTitle">Penelitian</h3><div class="sb-inp">🔍<input type="text" placeholder="Cari..." oninput="ft('tRes',this.value)"></div></div>
+  <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Ketua</th><th>Skema</th><th>Dana</th><th>Bidang</th><th>Tahun</th></tr></thead><tbody id="tRes"></tbody></table></div></div>
+</div>
+
+<!-- PENGABDIAN -->
+<div id="page-com" class="page">
+  <div class="topbar"><div><div class="tb-title">Pengabdian Masyarakat</div><div class="tb-sub">Community service · PKM, PMP &amp; skema lainnya</div></div></div>
+  <div class="mr" id="comMr"></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><div><div class="ct">Dana Pengabdian per Tahun (Juta Rp)</div></div></div><canvas id="cComDn" height="220"></canvas></div>
+    <div class="card"><div class="ch"><div><div class="ct">Skema Pengabdian</div></div></div><canvas id="cComSk" height="220"></canvas></div>
+  </div>
+  <div class="shd" style="margin-top:20px">Daftar Pengabdian</div>
+  <div class="tw"><div class="tth"><h3 id="comTitle">Pengabdian</h3><div class="sb-inp">🔍<input type="text" placeholder="Cari..." oninput="ft('tCom',this.value)"></div></div>
+  <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Ketua</th><th>Skema</th><th>Dana</th><th>Bidang</th><th>Tahun</th></tr></thead><tbody id="tCom"></tbody></table></div></div>
+</div>
+
+<!-- HKI -->
+<div id="page-hki" class="page">
+  <div class="topbar"><div><div class="tb-title">HKI / IPR</div><div class="tb-sub">Hak Kekayaan Intelektual · Hak cipta, paten &amp; merek</div></div></div>
+  <div class="mr" id="hkiMr"></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><div><div class="ct">Volume HKI per Tahun</div></div></div><canvas id="cHkiTr" height="220"></canvas></div>
+    <div class="card"><div class="ch"><div><div class="ct">Kategori HKI</div></div></div><canvas id="cHkiKt" height="220"></canvas></div>
+  </div>
+  <div class="shd" style="margin-top:20px">Daftar HKI</div>
+  <div class="tw"><div class="tth"><h3 id="hkiTitle">HKI / IPR</h3><div class="sb-inp">🔍<input type="text" placeholder="Cari..." oninput="ft('tHki',this.value)"></div></div>
+  <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Inventor</th><th>Kategori</th><th>No. Registrasi</th><th>Status</th><th>Tahun</th></tr></thead><tbody id="tHki"></tbody></table></div></div>
+</div>
+
+<!-- CONFIG -->
+<div id="page-cfg" class="page">
+  <div class="topbar"><div><div class="tb-title">Pengaturan &amp; Data</div><div class="tb-sub">Konfigurasi sumber data GitHub &amp; panduan update</div></div></div>
+  <div class="cfg">
+    <strong>Konfigurasi URL Repository GitHub</strong><br>
+    Masukkan URL raw GitHub tempat folder <code>data/</code> berada.<br>
+    Format: <code>https://raw.githubusercontent.com/{user}/{repo}/{branch}/data</code>
+    <div class="ci">
+      <input type="text" id="urlInp" placeholder="https://raw.githubusercontent.com/username/repo/main/data">
+      <button class="btn btp" onclick="saveUrl()">Simpan &amp; Muat Ulang</button>
+      <button class="btn bto" onclick="resetUrl()">Reset ke Demo</button>
+    </div>
+  </div>
+  <div class="shd">Status File per Tahun</div>
+  <div id="fsg"></div>
+  <div class="shd" style="margin-top:22px">Struktur Repo yang Dianjurkan</div>
+  <div class="rt">
+    <span class="rdir">your-repo/</span><br>
+    &nbsp;&nbsp;<span class="rdir">├── data/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="rdir">├── 2023/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── export_ipr_2023_Universitas_Yudharta_Pasuruan.xlsx<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── ... (8 file)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="rdir">├── 2024/</span> <span class="rnote">← sudah ada</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="rdir">├── 2025/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="rdir">└── 2026/</span><br>
+    &nbsp;&nbsp;└── index.html <span class="rnote">← dashboard ini</span>
+  </div>
+  <div class="shd" style="margin-top:22px">Cara Update Data</div>
+  <div class="g3e">
+    <div class="card" style="padding:16px"><div style="font-size:20px;margin-bottom:9px">1️⃣</div><div class="ct">Export dari SINTA</div><div class="cs" style="margin-top:5px;line-height:1.7">Login SINTA → pilih institusi → export 8 file Excel untuk tahun yang diinginkan</div></div>
+    <div class="card" style="padding:16px"><div style="font-size:20px;margin-bottom:9px">2️⃣</div><div class="ct">Upload ke GitHub</div><div class="cs" style="margin-top:5px;line-height:1.7">Buka <code style="font-family:monospace;font-size:10.5px">repo → data/{tahun}/</code> → drag &amp; drop file → commit changes</div></div>
+    <div class="card" style="padding:16px"><div style="font-size:20px;margin-bottom:9px">3️⃣</div><div class="ct">Dashboard Update Otomatis</div><div class="cs" style="margin-top:5px;line-height:1.7">Refresh dashboard. Semua tahun (2023–2026) bisa diupdate kapan saja secara independen</div></div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+'use strict';
+// ── COLORS ──────────────────────────────────────────────────
+const C={gr:'#059669',sk:'#0284c7',vi:'#7c3aed',am:'#d97706',ro:'#e11d48',gy:'#9ca3af',te:'#0d9488'};
+const PAL=[C.gr,C.sk,C.vi,C.am,C.ro,C.gy,C.te];
+
+// ── STATE ────────────────────────────────────────────────────
+const DB={years:{},loaded:{},active:'all'};
+const YEARS=[2023,2024,2025,2026];
+let charts={};
+
+// ── FILE PATTERNS ────────────────────────────────────────────
+const FP=[
+  {key:'ipr',     rx:/export_ipr/i,              label:'IPR / HKI'},
+  {key:'com',     rx:/export_com_service/i,       label:'Community Service'},
+  {key:'google',  rx:/export_google_publication/i,label:'Google Scholar'},
+  {key:'research',rx:/export_research/i,          label:'Research'},
+  {key:'wos',     rx:/export_wos/i,               label:'Web of Science'},
+  {key:'book',    rx:/export_book/i,              label:'Book'},
+  {key:'garuda',  rx:/export_garuda/i,            label:'Garuda'},
+  {key:'scopus',  rx:/export_scopus/i,            label:'Scopus'},
+];
+
+// ── XLSX PARSING ─────────────────────────────────────────────
+function wsToRows(ws){
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+  if(raw.length<5)return[];
+  const hdrs=raw[4].map(h=>h?String(h).trim():null);
+  const out=[];
+  for(let i=5;i<raw.length;i++){
+    const row=raw[i];
+    if(!row||row.every(v=>v===null||v===undefined||v===''))continue;
+    const obj={};
+    hdrs.forEach((h,j)=>{if(h)obj[h]=row[j];});
+    out.push(obj);
+  }
+  return out;
+}
+function parseDana(s){return s?parseInt(String(s).replace(/[^0-9]/g,''))||0:0;}
+function normStatus(s){
+  if(!s)return'Diproses';
+  const v=String(s).toLowerCase().trim();
+  const ok=['diterima','berlaku','granted','aktif','terdaftar','tercatat','terbit','publis'];
+  return ok.some(g=>v.includes(g))?'Diterima':'Diproses';
+}
+
+// ── LOAD DATA ────────────────────────────────────────────────
+async function loadAll(base){
+  if(base==='DEMO'){loadDemo();return;}
+  setLov(true,'Menghubungi repository...');
+  DB.years={};DB.loaded={};
+  for(const y of YEARS){
+    DB.years[y]={};DB.loaded[y]=[];
+    const files=[
+      {key:'ipr',     url:`${base}/${y}/export_ipr_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
+      {key:'com',     url:`${base}/${y}/export_com_service_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
+      {key:'google',  url:`${base}/${y}/export_google_publication_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
+      {key:'research',url:`${base}/${y}/export_research_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
+      {key:'wos',     url:`${base}/${y}/export_wos_publication_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
+      {key:'book',    url:`${base}/${y}/export_book_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
+      {key:'garuda',  url:`${base}/${y}/export_garuda_publication_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
+      {key:'scopus',  url:`${base}/${y}/export_scopus_publication_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
+    ];
+    for(const f of files){
+      try{
+        setLov(true,`Memuat ${y} · ${f.key}...`);
+        const res=await fetch(f.url);
+        if(!res.ok)continue;
+        const buf=await res.arrayBuffer();
+        const wb=XLSX.read(buf,{type:'array'});
+        const rows=wsToRows(wb.Sheets[wb.SheetNames[0]]);
+        DB.years[y][f.key]=rows;
+        DB.loaded[y].push(f.key);
+      }catch(e){}
+    }
+  }
+  setLov(false);
+  onReady();
+}
+
+function loadDemo(){
+  setLov(true,'Memuat data demo...');
+  const y24={
+    google:[
+      {NO:1,ACCREDITATION:'-',TITLE:'Implementation of Integrated Smart System Platform in Improving Public Services through Smart Village In Pucangsari Village',JOURNAL:'Soeropati: Journal of Community Service 6(1) 2024',AUTHORS:'L Hakim, MI Rosadi, A Prianto',YEAR:2024,CITATION:47},
+      {NO:2,ACCREDITATION:'S5',TITLE:'ANALISA BISNIS MODEL CANVAS PADA USAHA JASA LAYANAN KEBERSIHAN FAST CLEAN',JOURNAL:'AKSIOMA: Jurnal Manajemen 3(1) 2024',AUTHORS:'L Hakim',YEAR:2024,CITATION:1},
+      {NO:3,ACCREDITATION:'-',TITLE:'Bahasa Pemrograman Python',JOURNAL:'Sada Kurnia Pustaka 2024',AUTHORS:'S Maesaroh, L Hakim, YS Sari et al.',YEAR:2024,CITATION:10},
+      {NO:4,ACCREDITATION:'S3',TITLE:'Pengaruh Social Media Marketing terhadap Keputusan Pembelian Produk UMKM',JOURNAL:'JRMB Universitas PGRI 8(2) 2024',AUTHORS:'D Pratiwi, M Nizar',YEAR:2024,CITATION:4},
+      {NO:5,ACCREDITATION:'S4',TITLE:'Implementasi Metode AHP dalam Sistem Pendukung Keputusan Rekrutmen',JOURNAL:'Jurnal Informatika Yudharta 5(1) 2024',AUTHORS:'W Mualim, A Sutrisno',YEAR:2024,CITATION:3},
+      {NO:6,ACCREDITATION:'S2',TITLE:'Analisis Kualitas Air Sungai Welang menggunakan Indeks Pencemaran Air',JOURNAL:'Jurnal Lingkungan Hidup 12(2) 2024',AUTHORS:'K Mursyidah et al.',YEAR:2024,CITATION:2},
+      {NO:7,ACCREDITATION:'S4',TITLE:'Strategi Pemasaran Digital UMKM Batik di Era Post-Pandemi',JOURNAL:'Jurnal Ekonomi & Bisnis 9(1) 2024',AUTHORS:'L Hakim, D Utomo',YEAR:2024,CITATION:5},
+      {NO:8,ACCREDITATION:'S3',TITLE:'Machine Learning untuk Prediksi Kualitas Hasil Pertanian Jagung',JOURNAL:'JITA: Journal of Information Technology 7(2) 2024',AUTHORS:'W Mualim, H Santoso',YEAR:2024,CITATION:6},
+    ],
+    garuda:[
+      {NO:1,ACCREDITATION:'S4',DOI:'10.18860/mat.v16i2',TITLE:'Feature Selection Based on Artificial Bee Colony for Hotel Reservation Prediction',JOURNAL:'MATICS',PUBLISHER:'Dept. Informatika','DATE PUBLISH':'2024-09-23'},
+      {NO:2,ACCREDITATION:'S5',DOI:'10.35891/explorit',TITLE:'Game Edukasi Bahasa Inggris Berbasis Android',JOURNAL:'Explorit',PUBLISHER:'Tek. Informatika Yudharta','DATE PUBLISH':'2024-06-30'},
+      {NO:3,ACCREDITATION:'-',DOI:'10.58545/djpm',TITLE:'Pelatihan Dasar Fotografi untuk Mendukung Digitalisasi Produk Kopi Bubuk UMKM',JOURNAL:'DEDIKASI SAINTEK',PUBLISHER:'Al-Hijrah Indonesia','DATE PUBLISH':'2024-12-09'},
+      {NO:4,ACCREDITATION:'S3',DOI:'10.21107/agrointek',TITLE:'Optimasi Pengolahan Bioetanol dari Molases Tebu',JOURNAL:'Agrointek',PUBLISHER:'Univ. Trunojoyo','DATE PUBLISH':'2024-03-15'},
+      {NO:5,ACCREDITATION:'S4',DOI:'10.28926/buana',TITLE:'Penerapan Model SIR pada Penyebaran COVID-19 di Kota Malang',JOURNAL:'Buana Matematika',PUBLISHER:'Univ. PGRI Adi Buana','DATE PUBLISH':'2024-07-20'},
+    ],
+    scopus:[
+      {NO:1,IDENTIFIER:85189341413,QUARTILE:'Q3',TITLE:'Utilization of Ipomoea batatas L. tuber extract for DSSC with modified electrode from rice husk ash',PUBLICATION_NAME:'IOP Conf. Earth and Environmental Science',CREATOR:'Subagyo T.',YEAR:2024,CITATION:0},
+      {NO:2,IDENTIFIER:85189152530,QUARTILE:'Q3',TITLE:'Effects of alkaline extraction on the characteristics of lima bean starch',PUBLICATION_NAME:'Brazilian Journal of Food Technology',CREATOR:'Palupi H.T.',YEAR:2024,CITATION:1},
+      {NO:3,IDENTIFIER:85206202246,QUARTILE:'Q3',TITLE:'Exploring the Anti-Menopausal Potential of Rhizophora mucronata Lam. Ethanol Extract',PUBLICATION_NAME:'Ilmu Kelautan Indonesian Journal of Marine Sciences',CREATOR:'Ernawati',YEAR:2024,CITATION:2},
+      {NO:4,IDENTIFIER:85190000001,QUARTILE:'Q2',TITLE:'Digital Transformation in Indonesian SMEs: Barriers and Enablers',PUBLICATION_NAME:'Journal of Small Business Management',CREATOR:'Hakim L.',YEAR:2024,CITATION:3},
+      {NO:5,IDENTIFIER:85190000002,QUARTILE:'Q1',TITLE:'Nanoparticle Silver Biosynthesis Using Plant Extracts: A Green Chemistry Approach',PUBLICATION_NAME:'Green Chemistry Letters and Reviews',CREATOR:'Mursyidah K.',YEAR:2024,CITATION:5},
+    ],
+    wos:[
+      {NO:1,IDENTIFIER:'WOS:001356658400007',CORE:'Core',TITLE:'Improved Physical Properties of Frozen Chicken Egg Gels with Olive Leaf Extract Fortification',JOURNAL:'FOOD SCIENCE OF ANIMAL RESOURCES',AUTHOR:'Rachman AB et al.','DATE PUBLISH':' 2024',CITATION:2},
+      {NO:2,IDENTIFIER:'WOS:001383141600003',CORE:'Core',TITLE:'MATHEMATICAL STOCHASTICS MODEL OF TUBERCULOSIS USING EMPIRICAL DATA FROM MALANG CITY',JOURNAL:'COMMUNICATIONS IN MATHEMATICAL BIOLOGY AND NEUROSCIENCE',AUTHOR:'Hakim L, Rodliyah I','DATE PUBLISH':' 2024',CITATION:0},
+      {NO:3,IDENTIFIER:'WOS:001394740300005',CORE:'Core',TITLE:'Resilience Tested: Interplay between Mortgage Channels and Natural Disasters on Housing Price',JOURNAL:'INTERNATIONAL REAL ESTATE REVIEW',AUTHOR:'Nugroho AA, Hakim L','DATE PUBLISH':'WIN 2024',CITATION:0},
+      {NO:4,IDENTIFIER:'WOS:001400000001',CORE:'Core',TITLE:'Green Synthesis of Silver Nanoparticles and Their Antibacterial Activity',JOURNAL:'NANOMATERIALS',AUTHOR:'Mursyidah K','DATE PUBLISH':'DEC 31 2024',CITATION:1},
+    ],
+    book:[
+      {NO:1,'TAHUN TERBIT':2024,ISBN:9786231131157,KATEGORI:'buku referensi',TITLE:'Teknologi Pengolahan Serealia dan Legum',AUTHOR:'Salfiana et al.',TEMPAT_TERBIT:'Medan',PENERBIT:'Yayasan Kita Menulis',PAGE:156},
+      {NO:2,'TAHUN TERBIT':2024,ISBN:9786231333070,KATEGORI:'buku referensi',TITLE:'Buku Ajar Filsafat Ilmu',AUTHOR:'Umi Laili Yuhana et al.',TEMPAT_TERBIT:'Surabaya',PENERBIT:'Uwais Inspirasi Indonesia',PAGE:516},
+      {NO:3,'TAHUN TERBIT':2024,ISBN:9786231131935,KATEGORI:'buku referensi',TITLE:'Genetika Tumbuhan',AUTHOR:'Vega Kartika Sari et al.',TEMPAT_TERBIT:'Medan',PENERBIT:'Yayasan Kita Menulis',PAGE:200},
+      {NO:4,'TAHUN TERBIT':2024,ISBN:9786231200001,KATEGORI:'buku ajar',TITLE:'Manajemen Bisnis Digital untuk UMKM',AUTHOR:'M Nizar, L Hakim',TEMPAT_TERBIT:'Surabaya',PENERBIT:'Insan Cendekia Mandiri',PAGE:180},
+      {NO:5,'TAHUN TERBIT':2024,ISBN:9786231200002,KATEGORI:'buku ajar',TITLE:'Pengantar Agroindustri',AUTHOR:'D Utomo et al.',TEMPAT_TERBIT:'Jakarta',PENERBIT:'Gramedia',PAGE:240},
+    ],
+    research:[
+      {NO:1,'NAMA KETUA':'KHOIROTUL MURSYIDAH',TITLE:'Biosintesis Nanopartikel Perak Menggunakan Ekstrak Tangkai Daun Mbote','NAMA SINGKAT SKEMA':'PDP/Dosen Pemula','DANA DISETUJUI':'Rp. 29.140.000','TAHUN PELAKSANAAN KEGIATAN':2024,'BIDANG FOKUS':'Material Maju'},
+      {NO:2,'NAMA KETUA':'WILDAN MUALIM',TITLE:'Penerapan Tes Kepribadian sebagai Rekomendasi Seleksi Karyawan','NAMA SINGKAT SKEMA':'PDP/Dosen Pemula','DANA DISETUJUI':'Rp. 43.890.000','TAHUN PELAKSANAAN KEGIATAN':2024,'BIDANG FOKUS':'Teknologi Informasi dan Komunikasi'},
+      {NO:3,'NAMA KETUA':'MIFTAHUL HUDA',TITLE:'Pengaruh Inklusi Keuangan dan Financial Technology terhadap Minat Pinjaman Online','NAMA SINGKAT SKEMA':'PFR','DANA DISETUJUI':'Rp. 116.570.000','TAHUN PELAKSANAAN KEGIATAN':2024,'BIDANG FOKUS':'Sosial Humaniora'},
+      {NO:4,'NAMA KETUA':'DENY UTOMO',TITLE:'Optimasi Fermentasi Bioetanol dari Limbah Jagung dengan Response Surface Methodology','NAMA SINGKAT SKEMA':'PDP/Dosen Pemula','DANA DISETUJUI':'Rp. 38.900.000','TAHUN PELAKSANAAN KEGIATAN':2024,'BIDANG FOKUS':'Teknologi Informasi dan Komunikasi'},
+    ],
+    com:[
+      {NO:1,'NAMA KETUA':'LUKMAN HAKIM',TITLE:'Pendampingan Tourism Cyber PR melalui Integrated Tourism Smart Platform di desa wisata Wonokitri','NAMA SINGKAT SKEMA':'PKM','DANA DISETUJUI':'Rp. 42.373.000','TAHUN PELAKSANAAN KEGIATAN':2024,'BIDANG FOKUS':'Teknologi Informasi dan Komunikasi'},
+      {NO:2,'NAMA KETUA':'DENY UTOMO',TITLE:'Strategi Less Waste dalam Diversifikasi Pangan Olahan Jagung pada Kelompok Wanita Tani','NAMA SINGKAT SKEMA':'PKM','DANA DISETUJUI':'Rp. 40.608.000','TAHUN PELAKSANAAN KEGIATAN':2024,'BIDANG FOKUS':'Green Economy'},
+      {NO:3,'NAMA KETUA':'MUHAMMAD NIZAR',TITLE:'Penguatan Digital Capability Masyarakat Lokal pada UKM Batik Canting Khas Gempol Pasuruan','NAMA SINGKAT SKEMA':'PMP','DANA DISETUJUI':'Rp. 21.625.000','TAHUN PELAKSANAAN KEGIATAN':2024,'BIDANG FOKUS':'Digital Economy'},
+      {NO:4,'NAMA KETUA':'KHOIROTUL MURSYIDAH',TITLE:'Sosialisasi Bahaya Limbah Detergen terhadap Ekosistem Sungai kepada Komunitas Ibu Rumah Tangga','NAMA SINGKAT SKEMA':'PKM','DANA DISETUJUI':'Rp. 17.402.000','TAHUN PELAKSANAAN KEGIATAN':2024,'BIDANG FOKUS':'Lingkungan Hidup'},
+    ],
+    ipr:[
+      {NO:1,TAHUN_PERMOHONAN:2024,NOMOR_PERMOHONAN:'EC00202418494',KATEGORI:'hak cipta',TITLE:'ANALISIS ETNOGRAFI VIRTUAL FENOMENA CANCEL CULTURE TOKOH PUBLIK MEDIA SOSIAL INDONESIA',INVENTOR:'Faris, Zakiyatul Mardiyah',STATUS:'Diterima',NO_REGISTRASI:'000138094'},
+      {NO:2,TAHUN_PERMOHONAN:2024,NOMOR_PERMOHONAN:'EC00202414459',KATEGORI:'hak cipta',TITLE:'Pengantar Agroindustri',INVENTOR:'Natelda R Timisela et al.',STATUS:'Diterima',NO_REGISTRASI:'000589830'},
+      {NO:3,TAHUN_PERMOHONAN:2024,NOMOR_PERMOHONAN:'EC00202420407',KATEGORI:'hak cipta',TITLE:'GENETIKA TUMBUHAN',INVENTOR:'Vega Kartika Sari et al.',STATUS:'Diterima',NO_REGISTRASI:'000595766'},
+      {NO:4,TAHUN_PERMOHONAN:2024,NOMOR_PERMOHONAN:'EC00202430001',KATEGORI:'hak cipta',TITLE:'Sistem Informasi Manajemen Akademik Berbasis Web',INVENTOR:'W Mualim, A Sutrisno',STATUS:'Terdaftar',NO_REGISTRASI:'000612001'},
+      {NO:5,TAHUN_PERMOHONAN:2024,NOMOR_PERMOHONAN:'EC00202430002',KATEGORI:'hak cipta',TITLE:'Manajemen Bisnis Digital untuk UMKM',INVENTOR:'M Nizar, L Hakim',STATUS:'Berlaku',NO_REGISTRASI:'000625002'},
+    ],
+  };
+  const clone=(r,y)=>r.map(x=>({...x}));
+  const y23={
+    google:clone(y24.google).slice(0,5).map(r=>({...r,YEAR:2023,CITATION:Math.max(0,(r.CITATION||0)-2)})),
+    garuda:clone(y24.garuda).slice(0,3).map(r=>({...r})),
+    scopus:clone(y24.scopus).slice(0,2).map(r=>({...r,YEAR:2023})),
+    wos:clone(y24.wos).slice(0,2),
+    book:clone(y24.book).slice(0,3).map(r=>({...r,'TAHUN TERBIT':2023})),
+    research:clone(y24.research).slice(0,3).map(r=>({...r,'TAHUN PELAKSANAAN KEGIATAN':2023,'DANA DISETUJUI':'Rp. 35.000.000'})),
+    com:clone(y24.com).slice(0,2).map(r=>({...r,'TAHUN PELAKSANAAN KEGIATAN':2023,'DANA DISETUJUI':'Rp. 38.000.000'})),
+    ipr:clone(y24.ipr).slice(0,3).map(r=>({...r,TAHUN_PERMOHONAN:2023})),
+  };
+  DB.years[2024]=y24; DB.years[2023]=y23;
+  DB.loaded[2024]=Object.keys(y24); DB.loaded[2023]=Object.keys(y23);
+  setTimeout(()=>{setLov(false);onReady();},600);
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function gr(type,year){
+  if(year==='all')return YEARS.flatMap(y=>DB.years[y]?.[type]||[]);
+  return DB.years[year]?.[type]||[];
+}
+function gy(){return YEARS.filter(y=>DB.years[y]&&Object.keys(DB.years[y]).length>0);}
+function cnt(arr,fn){const r={};arr.forEach(x=>{const k=fn(x);r[k]=(r[k]||0)+1;});return r;}
+function tr(s,n){if(!s)return'–';return String(s).length>n?String(s).slice(0,n)+'…':String(s);}
+function nt(v){return(+v).toLocaleString('id-ID');}
+function er(c){return`<tr><td colspan="${c}" style="text-align:center;padding:32px;color:var(--t4);font-size:13px">Tidak ada data</td></tr>`;}
+function ms(arr){return arr.map(s=>`<div class="ms"><div class="msv">${s.v}</div><div class="msl">${s.l}</div></div>`).join('');}
+function ab(v){
+  const m={S1:'bs1',S2:'bs2',S3:'bs3',S4:'bs4',S5:'bs5',S6:'bs6',Q1:'bq1',Q2:'bq2',Q3:'bq3',Q4:'bq4',Core:'bs2'};
+  return`<span class="b ${m[v]||'bnu'}">${v||'–'}</span>`;
+}
+
+// ── ON READY ─────────────────────────────────────────────────
+function onReady(){
+  buildPills();
+  renderAll();
+  setLov(false);
+  const yrs=gy();
+  document.getElementById('sbBadge').textContent=`Data: ${yrs.join(', ')}`;
+  document.getElementById('chipSt').textContent=`✓ ${yrs.length} tahun dimuat`;
+  document.getElementById('chipSt').classList.replace('warn','ok');
+  buildFsg();
+}
+
+function buildPills(){
+  const yrs=gy();
+  const c=document.getElementById('ypills');
+  c.innerHTML=`<span class="yp active" data-year="all" onclick="setYear(this)">All</span>`;
+  yrs.forEach(y=>{
+    const s=document.createElement('span');
+    s.className='yp';s.dataset.year=y;s.textContent=y;
+    s.onclick=function(){setYear(this);};c.appendChild(s);
+  });
+}
+
+function renderAll(){
+  const y=DB.active;
+  buildKPI(y);buildOvCharts(y);buildTopCit(y);
+  buildPub(y);buildIntl(y);buildBook(y);buildRes(y);buildCom(y);buildHki(y);
+  updateNC(y);
+}
+
+// ── KPI ──────────────────────────────────────────────────────
+function buildKPI(y){
+  const gs=gr('google',y),gar=gr('garuda',y),sc=gr('scopus',y),wos=gr('wos',y);
+  const bk=gr('book',y),res=gr('research',y),com=gr('com',y),ipr=gr('ipr',y);
+  const py=y==='all'?null:parseInt(y)-1;
+  function d(cur,prev){
+    if(prev===null)return`<span class="kd dn">● Baru</span>`;
+    const df=cur-prev,pct=prev>0?Math.round(df/prev*100):0;
+    if(df>0)return`<span class="kd du">↑ ${pct>0?pct+'%':'+'+df}</span>`;
+    if(df<0)return`<span class="kd dd">↓ ${Math.abs(pct)>0?Math.abs(pct)+'%':Math.abs(df)}</span>`;
+    return`<span class="kd df">= sama</span>`;
+  }
+  const pv=k=>py?(DB.years[py]?.[k]?.length||0):null;
+  const data=[
+    {em:'📄',tag:'Google Scholar',num:nt(gs.length),unit:'artikel',lbl:'Publikasi Google Scholar',c:'var(--ac2)',d:d(gs.length,pv('google'))},
+    {em:'🗂',tag:'Garuda',        num:nt(gar.length),unit:'artikel',lbl:'Publikasi Garuda',        c:'var(--sk)', d:d(gar.length,pv('garuda'))},
+    {em:'🔬',tag:'Scopus',        num:nt(sc.length), unit:'artikel',lbl:'Publikasi Scopus',        c:'var(--vi)', d:d(sc.length,pv('scopus'))},
+    {em:'🌐',tag:'WoS',           num:nt(wos.length),unit:'artikel',lbl:'Web of Science',          c:'var(--am)', d:d(wos.length,pv('wos'))},
+    {em:'📚',tag:'Buku',          num:nt(bk.length), unit:'judul',  lbl:'Penerbitan Buku',         c:'var(--gr)', d:d(bk.length,pv('book'))},
+    {em:'🔭',tag:'Penelitian',    num:nt(res.length),unit:'judul',  lbl:'Penelitian Didanai',      c:'var(--sk)', d:d(res.length,pv('research'))},
+    {em:'🤝',tag:'Pengabdian',    num:nt(com.length),unit:'keg.',   lbl:'Pengabdian Masyarakat',   c:'var(--am)', d:d(com.length,pv('com'))},
+    {em:'🏆',tag:'HKI / IPR',     num:nt(ipr.length),unit:'dok.',   lbl:'Hak Kekayaan Intelektual',c:'var(--ro)', d:d(ipr.length,pv('ipr'))},
+  ];
+  document.getElementById('kpiGrid').innerHTML=data.map((k,i)=>`
+    <div class="kc" style="--kc:${k.c};animation-delay:${.04+i*.04}s">
+      <div class="kc-ir"><span class="kc-em">${k.em}</span><span class="kc-tag">${k.tag}</span></div>
+      <div class="kc-num">${k.num}<span class="kc-unit">${k.unit}</span></div>
+      <div class="kc-lbl">${k.lbl}</div>${k.d}
+    </div>`).join('');
+}
+
+function updateNC(y){
+  document.getElementById('nc-pub').textContent =nt(gr('google',y).length+gr('garuda',y).length);
+  document.getElementById('nc-intl').textContent=nt(gr('scopus',y).length+gr('wos',y).length);
+  document.getElementById('nc-book').textContent=nt(gr('book',y).length);
+  document.getElementById('nc-res').textContent =nt(gr('research',y).length);
+  document.getElementById('nc-com').textContent =nt(gr('com',y).length);
+  document.getElementById('nc-ipr').textContent =nt(gr('ipr',y).length);
+}
+
+// ── CHART HELPERS ────────────────────────────────────────────
+function tt(){return{backgroundColor:'#fff',borderColor:'#e2e8f0',borderWidth:1,padding:10,titleColor:'#0f172a',bodyColor:'#374151',titleFont:{size:11,weight:'600'},bodyFont:{size:11}};}
+function sc(){return{x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{color:'#9ca3af',font:{size:11}}},y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{color:'#9ca3af',font:{size:11}}}};}
+function bo(leg){return{responsive:true,plugins:{legend:leg?{display:true,position:leg,labels:{color:'#6b7280',boxWidth:9,padding:14,font:{size:11}}}:{display:false},tooltip:tt()},scales:sc()};}
+function dOpts(){return{cutout:'66%',plugins:{legend:{display:false},tooltip:tt()}};}
+function rc(id,type,data,opts){if(charts[id])charts[id].destroy();const c=document.getElementById(id);if(!c)return;charts[id]=new Chart(c,{type,data,options:opts});}
+
+// ── OVERVIEW CHARTS ──────────────────────────────────────────
+function buildOvCharts(y){
+  const yrs=gy().sort();
+  rc('cTrend','line',{
+    labels:yrs,
+    datasets:[
+      {label:'GS',    data:yrs.map(y=>DB.years[y]?.google?.length||0),borderColor:C.gr,backgroundColor:'rgba(5,150,105,.08)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:C.gr},
+      {label:'Garuda',data:yrs.map(y=>DB.years[y]?.garuda?.length||0),borderColor:C.sk,backgroundColor:'rgba(2,132,199,.06)', fill:true,tension:.4,pointRadius:5,pointBackgroundColor:C.sk},
+      {label:'Scopus',data:yrs.map(y=>DB.years[y]?.scopus?.length||0),borderColor:C.vi,tension:.4,pointRadius:5,pointBackgroundColor:C.vi},
+      {label:'WoS',   data:yrs.map(y=>DB.years[y]?.wos?.length||0),  borderColor:C.am,tension:.4,pointRadius:5,pointBackgroundColor:C.am},
+    ]
+  },bo('bottom'));
+
+  // Garuda donut
+  const gar=gr('garuda',y);
+  const gak=cnt(gar,r=>r.ACCREDITATION||'-');
+  const gL=['S1','S2','S3','S4','S5','S6','-'],gV=gL.map(l=>gak[l]||0);
+  const gCol=[C.gr,C.sk,C.vi,C.am,C.ro,'#7f8fa6',C.gy];
+  rc('cGarD','doughnut',{labels:gL,datasets:[{data:gV,backgroundColor:gCol,borderWidth:0,hoverOffset:6}]},dOpts());
+  document.getElementById('garSub').textContent=`${gar.length} artikel`;
+  document.getElementById('garLeg').innerHTML=gL.map((l,i)=>gV[i]>0?`<div class="dlr"><div class="dll"><div class="dld" style="background:${gCol[i]}"></div>${l}</div><div class="dln">${gV[i]}</div></div>`:'').join('');
+
+  // Scopus donut
+  const sc2=gr('scopus',y);
+  const sqc=cnt(sc2,r=>r.QUARTILE||'-');
+  const qL=['Q1','Q2','Q3','Q4'],qV=qL.map(l=>sqc[l]||0),qCol=[C.gr,C.sk,C.am,C.ro];
+  rc('cScD','doughnut',{labels:qL,datasets:[{data:qV,backgroundColor:qCol,borderWidth:0,hoverOffset:6}]},dOpts());
+  document.getElementById('scSub').textContent=`${sc2.length} artikel`;
+  document.getElementById('scLeg').innerHTML=qL.map((l,i)=>qV[i]>0?`<div class="dlr"><div class="dll"><div class="dld" style="background:${qCol[i]}"></div>${l}</div><div class="dln">${qV[i]}</div></div>`:'').join('');
+
+  // Dana
+  rc('cDana','bar',{labels:yrs,datasets:[
+    {label:'Penelitian',data:yrs.map(y=>(DB.years[y]?.research||[]).reduce((a,r)=>a+parseDana(r['DANA DISETUJUI']),0)/1e6),backgroundColor:C.vi+'cc',borderRadius:6},
+    {label:'Pengabdian',data:yrs.map(y=>(DB.years[y]?.com||[]).reduce((a,r)=>a+parseDana(r['DANA DISETUJUI']),0)/1e6),      backgroundColor:C.sk+'cc',borderRadius:6},
+  ]},{...bo('bottom'),scales:{x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{color:'#9ca3af'}},y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{color:'#9ca3af',callback:v=>'Rp '+v.toFixed(0)+'Jt'}}}});
+
+  // Sitasi
+  rc('cCit','bar',{labels:yrs,datasets:[{data:yrs.map(y=>(DB.years[y]?.google||[]).reduce((a,r)=>a+(+r.CITATION||0),0)),backgroundColor:C.gr+'cc',borderRadius:6}]},bo(false));
+}
+
+// ── TOP CITATION ──────────────────────────────────────────────
+function buildTopCit(y){
+  const rows=[
+    ...gr('google',y).map(r=>({t:r.TITLE,j:r.JOURNAL,au:r.AUTHORS,db:'GS',ak:r.ACCREDITATION||'-',c:+r.CITATION||0})),
+    ...gr('scopus',y).map(r=>({t:r.TITLE,j:r.PUBLICATION_NAME,au:r.CREATOR,db:'Scopus',ak:r.QUARTILE||'-',c:+r.CITATION||0})),
+    ...gr('wos',y).map(r=>({t:r.TITLE,j:r.JOURNAL,au:r.AUTHOR,db:'WoS',ak:'Core',c:+r.CITATION||0})),
+  ].sort((a,b)=>b.c-a.c).slice(0,10);
+  document.getElementById('tTop').innerHTML=rows.length?rows.map((r,i)=>`<tr>
+    <td class="tdn" style="color:var(--t4)">${i+1}</td>
+    <td class="tdm">${tr(r.t,80)}<div class="tds">${tr(r.j,55)}</div></td>
+    <td style="font-size:11.5px">${tr(r.au,30)}</td>
+    <td>${ab(r.db)}</td><td>${ab(r.ak)}</td>
+    <td class="tdn" style="text-align:right;color:var(--ac2);font-weight:600">${r.c}</td>
+  </tr>`).join(''):er(6);
+}
+
+// ── PUBLIKASI ─────────────────────────────────────────────────
+function buildPub(y){
+  const gs=gr('google',y),gar=gr('garuda',y);
+  const tc=gs.reduce((a,r)=>a+(+r.CITATION||0),0);
+  document.getElementById('pubMr').innerHTML=ms([{v:nt(gs.length),l:'Google Scholar'},{v:nt(gar.length),l:'Garuda'},{v:nt(tc),l:'Total Sitasi GS'},{v:nt(gs.length+gar.length),l:'Total Publikasi'}]);
+  document.getElementById('gsTitle').textContent=`Google Scholar · ${nt(gs.length)} artikel`;
+
+  const gak=cnt(gs,r=>r.ACCREDITATION||'-');
+  const aL=['S1','S2','S3','S4','S5','S6','-'];
+  rc('cGsAk','bar',{labels:aL,datasets:[{data:aL.map(l=>gak[l]||0),backgroundColor:[C.gr,C.sk,C.vi,C.am,C.ro,'#7f8fa6',C.gy],borderRadius:6}]},bo(false));
+
+  const gmn=Array(12).fill(0);
+  gar.forEach(r=>{const d=r['DATE PUBLISH']||r.DATE_PUBLISH||'';const m=String(d).match(/-(0[1-9]|1[0-2])-/);if(m)gmn[+m[1]-1]++;});
+  rc('cGarBln','bar',{labels:['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'],datasets:[{data:gmn,backgroundColor:C.sk+'88',borderRadius:4,borderColor:C.sk,borderWidth:1}]},bo(false));
+
+  const sorted=[...gs].sort((a,b)=>(+b.CITATION||0)-(+a.CITATION||0));
+  document.getElementById('tGs').innerHTML=sorted.length?sorted.map((r,i)=>`<tr>
+    <td class="tdn" style="color:var(--t4)">${i+1}</td>
+    <td class="tdm">${tr(r.TITLE,80)}<div class="tds">${tr(r.JOURNAL,55)}</div></td>
+    <td style="font-size:11px;max-width:120px">${tr(r.JOURNAL,25)}</td>
+    <td style="font-size:11px">${tr(r.AUTHORS,30)}</td>
+    <td>${ab(r.ACCREDITATION||'-')}</td>
+    <td class="tdn" style="text-align:right;color:var(--ac2);font-weight:600">${+r.CITATION||0}</td>
+  </tr>`).join(''):er(6);
+}
+
+// ── SCOPUS & WOS ──────────────────────────────────────────────
+function buildIntl(y){
+  const sc=gr('scopus',y),wos=gr('wos',y);
+  const tc=[...sc,...wos].reduce((a,r)=>a+(+r.CITATION||0),0);
+  document.getElementById('intlMr').innerHTML=ms([{v:nt(sc.length),l:'Scopus'},{v:nt(wos.length),l:'WoS'},{v:nt(sc.length+wos.length),l:"Total Int'l"},{v:nt(tc),l:'Total Sitasi'}]);
+  document.getElementById('scTitle').textContent=`Scopus · ${nt(sc.length)} artikel`;
+  document.getElementById('wosTitle').textContent=`WoS · ${nt(wos.length)} artikel`;
+
+  const yrs=gy().sort();
+  rc('cIntlTr','bar',{labels:yrs,datasets:[
+    {label:'Scopus',data:yrs.map(y=>DB.years[y]?.scopus?.length||0),backgroundColor:C.vi+'cc',borderRadius:6},
+    {label:'WoS',   data:yrs.map(y=>DB.years[y]?.wos?.length||0),   backgroundColor:C.am+'cc',borderRadius:6},
+  ]},bo('bottom'));
+
+  const qc=cnt(sc,r=>r.QUARTILE||'-');
+  const qL=['Q1','Q2','Q3','Q4'],qV=qL.map(l=>qc[l]||0);
+  rc('cScQ','doughnut',{labels:qL,datasets:[{data:qV,backgroundColor:[C.gr,C.sk,C.am,C.ro],borderWidth:0,hoverOffset:6}]},
+    {...dOpts(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b7280',boxWidth:9,padding:12}},tooltip:tt()}});
+
+  document.getElementById('tSc').innerHTML=sc.length?sc.map((r,i)=>`<tr>
+    <td class="tdn" style="color:var(--t4)">${i+1}</td>
+    <td class="tdm">${tr(r.TITLE,80)}<div class="tds">${tr(r.PUBLICATION_NAME,55)}</div></td>
+    <td style="font-size:11px">${tr(r.PUBLICATION_NAME,30)}</td>
+    <td style="font-size:11px">${r.CREATOR||'–'}</td>
+    <td>${ab(r.QUARTILE||'-')}</td>
+    <td class="tdn" style="text-align:right;color:var(--ac2);font-weight:600">${+r.CITATION||0}</td>
+  </tr>`).join(''):er(6);
+
+  document.getElementById('tWos').innerHTML=wos.length?wos.map((r,i)=>`<tr>
+    <td class="tdn" style="color:var(--t4)">${i+1}</td>
+    <td class="tdm">${tr(r.TITLE,80)}<div class="tds">${tr(r.JOURNAL,55)}</div></td>
+    <td style="font-size:11px">${tr(r.JOURNAL,30)}</td>
+    <td style="font-size:11px">${r.AUTHOR||'–'}</td>
+    <td><span class="b bs2">${r.CORE||'–'}</span></td>
+    <td class="tdn" style="text-align:right;color:var(--ac2);font-weight:600">${+r.CITATION||0}</td>
+  </tr>`).join(''):er(6);
+}
+
+// ── BUKU ──────────────────────────────────────────────────────
+function buildBook(y){
+  const rows=gr('book',y);
+  document.getElementById('bookMr').innerHTML=ms([{v:nt(rows.length),l:'Total Buku'},...gy().sort().slice(-2).map(yr=>({v:nt(DB.years[yr]?.book?.length||0),l:`Buku ${yr}`}))]);
+  document.getElementById('bookTitle').textContent=`Buku · ${nt(rows.length)} judul`;
+  const yrs=gy().sort();
+  rc('cBkTr','bar',{labels:yrs,datasets:[{data:yrs.map(y=>DB.years[y]?.book?.length||0),backgroundColor:C.am+'cc',borderRadius:6}]},bo(false));
+  const kc=cnt(rows,r=>(r.KATEGORI||'lainnya').trim().toLowerCase());
+  const kL=Object.keys(kc);
+  rc('cBkKt','doughnut',{labels:kL,datasets:[{data:kL.map(k=>kc[k]),backgroundColor:PAL,borderWidth:0,hoverOffset:6}]},
+    {...dOpts(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b7280',boxWidth:9,padding:12}},tooltip:tt()}});
+  const sorted=[...rows].sort((a,b)=>(b['TAHUN TERBIT']||0)-(a['TAHUN TERBIT']||0));
+  document.getElementById('tBk').innerHTML=sorted.length?sorted.map((r,i)=>`<tr>
+    <td class="tdn" style="color:var(--t4)">${i+1}</td>
+    <td class="tdm">${tr(r.TITLE,80)}</td>
+    <td style="font-size:11.5px">${tr(r.AUTHOR,40)}</td>
+    <td style="font-size:11.5px">${r.PENERBIT||'–'}</td>
+    <td><span class="b bs3">${r.KATEGORI||'–'}</span></td>
+    <td class="tdn">${r['TAHUN TERBIT']||'–'}</td>
+  </tr>`).join(''):er(6);
+}
+
+// ── PENELITIAN ────────────────────────────────────────────────
+function buildRes(y){
+  const rows=gr('research',y);
+  const td=rows.reduce((a,r)=>a+parseDana(r['DANA DISETUJUI']),0);
+  document.getElementById('resMr').innerHTML=ms([{v:nt(rows.length),l:'Total Penelitian'},{v:'Rp '+Math.round(td/1e6)+'Jt',l:'Total Dana'}]);
+  document.getElementById('resTitle').textContent=`Penelitian · ${nt(rows.length)} judul`;
+  const yrs=gy().sort();
+  rc('cResDn','bar',{labels:yrs,datasets:[{data:yrs.map(y=>(DB.years[y]?.research||[]).reduce((a,r)=>a+parseDana(r['DANA DISETUJUI']),0)/1e6),backgroundColor:C.vi+'cc',borderRadius:6}]},bo(false));
+  const bc=cnt(rows,r=>(r['BIDANG FOKUS']||'Lainnya').split(',')[0].trim());
+  const bL=Object.keys(bc);
+  rc('cResBd','doughnut',{labels:bL,datasets:[{data:bL.map(k=>bc[k]),backgroundColor:PAL,borderWidth:0,hoverOffset:6}]},
+    {...dOpts(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b7280',boxWidth:9,padding:12}},tooltip:tt()}});
+  const sorted=[...rows].sort((a,b)=>(b['TAHUN PELAKSANAAN KEGIATAN']||0)-(a['TAHUN PELAKSANAAN KEGIATAN']||0));
+  document.getElementById('tRes').innerHTML=sorted.length?sorted.map((r,i)=>`<tr>
+    <td class="tdn" style="color:var(--t4)">${i+1}</td>
+    <td class="tdm">${tr(r.TITLE,80)}</td>
+    <td style="font-size:11.5px;white-space:nowrap">${r['NAMA KETUA']||'–'}</td>
+    <td><span class="b bs3">${r['NAMA SINGKAT SKEMA']||'–'}</span></td>
+    <td class="tdn" style="color:var(--gr);white-space:nowrap;font-size:11px">${r['DANA DISETUJUI']||'–'}</td>
+    <td style="font-size:11.5px">${tr(r['BIDANG FOKUS']||'–',28)}</td>
+    <td class="tdn">${r['TAHUN PELAKSANAAN KEGIATAN']||'–'}</td>
+  </tr>`).join(''):er(7);
+}
+
+// ── PENGABDIAN ────────────────────────────────────────────────
+function buildCom(y){
+  const rows=gr('com',y);
+  const td=rows.reduce((a,r)=>a+parseDana(r['DANA DISETUJUI']),0);
+  document.getElementById('comMr').innerHTML=ms([{v:nt(rows.length),l:'Total Kegiatan'},{v:'Rp '+Math.round(td/1e6)+'Jt',l:'Total Dana'}]);
+  document.getElementById('comTitle').textContent=`Pengabdian · ${nt(rows.length)} kegiatan`;
+  const yrs=gy().sort();
+  rc('cComDn','bar',{labels:yrs,datasets:[{data:yrs.map(y=>(DB.years[y]?.com||[]).reduce((a,r)=>a+parseDana(r['DANA DISETUJUI']),0)/1e6),backgroundColor:C.sk+'cc',borderRadius:6}]},bo(false));
+  const sk=cnt(rows,r=>r['NAMA SINGKAT SKEMA']||'Lainnya');
+  const sL=Object.keys(sk);
+  rc('cComSk','doughnut',{labels:sL,datasets:[{data:sL.map(k=>sk[k]),backgroundColor:PAL,borderWidth:0,hoverOffset:6}]},
+    {...dOpts(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b7280',boxWidth:9,padding:12}},tooltip:tt()}});
+  const sorted=[...rows].sort((a,b)=>(b['TAHUN PELAKSANAAN KEGIATAN']||0)-(a['TAHUN PELAKSANAAN KEGIATAN']||0));
+  document.getElementById('tCom').innerHTML=sorted.length?sorted.map((r,i)=>`<tr>
+    <td class="tdn" style="color:var(--t4)">${i+1}</td>
+    <td class="tdm">${tr(r.TITLE,80)}</td>
+    <td style="font-size:11.5px;white-space:nowrap">${r['NAMA KETUA']||'–'}</td>
+    <td><span class="b bs2">${r['NAMA SINGKAT SKEMA']||'–'}</span></td>
+    <td class="tdn" style="color:var(--sk);white-space:nowrap;font-size:11px">${r['DANA DISETUJUI']||'–'}</td>
+    <td style="font-size:11.5px">${tr(r['BIDANG FOKUS']||'–',28)}</td>
+    <td class="tdn">${r['TAHUN PELAKSANAAN KEGIATAN']||'–'}</td>
+  </tr>`).join(''):er(7);
+}
+
+// ── HKI ──────────────────────────────────────────────────────
+function buildHki(y){
+  const rows=gr('ipr',y);
+  const ok=rows.filter(r=>normStatus(r.STATUS)==='Diterima').length;
+  document.getElementById('hkiMr').innerHTML=ms([{v:nt(rows.length),l:'Total HKI'},{v:nt(ok),l:'Diterima'},{v:nt(rows.length-ok),l:'Diproses'}]);
+  document.getElementById('hkiTitle').textContent=`HKI / IPR · ${nt(rows.length)} dokumen`;
+  const yrs=gy().sort();
+  rc('cHkiTr','bar',{labels:yrs,datasets:[{data:yrs.map(y=>DB.years[y]?.ipr?.length||0),backgroundColor:C.ro+'bb',borderRadius:6,borderColor:C.ro,borderWidth:1}]},bo(false));
+  const kc=cnt(rows,r=>(r.KATEGORI||'lainnya').trim().toLowerCase());
+  const kL=Object.keys(kc);
+  rc('cHkiKt','doughnut',{labels:kL,datasets:[{data:kL.map(k=>kc[k]),backgroundColor:PAL,borderWidth:0,hoverOffset:6}]},
+    {...dOpts(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b7280',boxWidth:9,padding:12}},tooltip:tt()}});
+  const sorted=[...rows].sort((a,b)=>(b.TAHUN_PERMOHONAN||0)-(a.TAHUN_PERMOHONAN||0));
+  document.getElementById('tHki').innerHTML=sorted.length?sorted.map((r,i)=>`<tr>
+    <td class="tdn" style="color:var(--t4)">${i+1}</td>
+    <td class="tdm">${tr(r.TITLE,80)}</td>
+    <td style="font-size:11.5px">${tr(r.INVENTOR,35)}</td>
+    <td><span class="b bs4">${r.KATEGORI||'–'}</span></td>
+    <td class="tdn" style="font-size:10.5px">${r.NO_REGISTRASI||'–'}</td>
+    <td><span class="b ${normStatus(r.STATUS)==='Diterima'?'bok':'bwn'}">${normStatus(r.STATUS)}</span></td>
+    <td class="tdn">${r.TAHUN_PERMOHONAN||'–'}</td>
+  </tr>`).join(''):er(7);
+}
+
+// ── FILE STATUS GRID ──────────────────────────────────────────
+function buildFsg(){
+  const yrs=gy();
+  if(!yrs.length){document.getElementById('fsg').innerHTML='<p style="color:var(--t3);font-size:13px">Belum ada data.</p>';return;}
+  document.getElementById('fsg').innerHTML=yrs.map(y=>`
+    <div class="shd" style="margin-top:16px">Tahun ${y}</div>
+    <div class="fg">
+      ${FP.map(p=>{
+        const ok=DB.loaded[y]?.includes(p.key);
+        const c=DB.years[y]?.[p.key]?.length||0;
+        return`<div class="fs ${ok?'loaded':'missing'}"><div class="fi">${ok?'📊':'📁'}</div>
+        <div><div class="fn">${p.label}</div><div class="fm">${ok?c+' records · '+y:'Belum diupload'}</div></div></div>`;
+      }).join('')}
+    </div>`).join('');
+}
+
+// ── NAVIGATION ───────────────────────────────────────────────
+function nav(el,page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  el.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function setYear(el){
+  document.querySelectorAll('.yp').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  DB.active=el.dataset.year==='all'?'all':parseInt(el.dataset.year);
+  document.getElementById('chipYear').textContent=el.dataset.year==='all'?'All Years':`Tahun ${el.dataset.year}`;
+  renderAll();
+}
+function setTheme(el){
+  document.querySelectorAll('.ts').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.documentElement.setAttribute('data-theme',el.dataset.t);
+}
+function saveUrl(){
+  const u=document.getElementById('urlInp').value.trim();
+  if(!u)return alert('Masukkan URL repository terlebih dahulu.');
+  localStorage.setItem('sintaRepo',u);
+  loadAll(u);
+}
+function resetUrl(){
+  localStorage.removeItem('sintaRepo');
+  document.getElementById('urlInp').value='';
+  loadAll('DEMO');
+}
+function ft(id,q){
+  const t=document.getElementById(id);
+  if(!t)return;
+  const term=q.toLowerCase();
+  t.querySelectorAll('tr').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(term)?'':'none';});
+}
+function setLov(on,msg){
+  const el=document.getElementById('lov');
+  if(on){el.classList.remove('hidden');if(msg)document.getElementById('ltx').textContent=msg;}
+  else el.classList.add('hidden');
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',()=>{
+  Chart.defaults.font.family="'Plus Jakarta Sans',sans-serif";
+  Chart.defaults.font.size=11;
+  Chart.defaults.color='#9ca3af';
+  const saved=localStorage.getItem('sintaRepo');
+  document.getElementById('urlInp').value=saved||'';
+  loadAll(saved||'DEMO');
+});
+</script>
+</body>
+</html>
