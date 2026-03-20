@@ -236,6 +236,27 @@ tbody tr:hover td{background:var(--bg3)}
   <div class="shd">Top Publikasi Tersitasi</div>
   <div class="tw"><div class="tth"><h3>10 Paling Banyak Disitasi</h3><div class="sb-inp">🔍<input type="text" id="srchTop" placeholder="Cari..." oninput="srch('tTop',this.value)"></div></div>
   <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Penulis</th><th>DB</th><th>Akred</th><th style="text-align:right">Sitasi</th></tr></thead><tbody id="tTop"></tbody></table></div></div>
+  <div class="shd">Tabel Indikator SINTA per Tahun</div>
+  <div class="tw" style="overflow-x:auto">
+    <div class="tth"><h3>Rekap Semua Indikator per Tahun</h3></div>
+    <table id="tIndikator">
+      <thead><tr>
+        <th>Tahun</th>
+        <th style="text-align:right">Google Scholar</th>
+        <th style="text-align:right">Garuda</th>
+        <th style="text-align:right">Scopus</th>
+        <th style="text-align:right">WoS</th>
+        <th style="text-align:right">Buku</th>
+        <th style="text-align:right">Penelitian</th>
+        <th style="text-align:right">Pengabdian</th>
+        <th style="text-align:right">HKI</th>
+        <th style="text-align:right">Sitasi GS</th>
+        <th style="text-align:right">Dana Penelitian</th>
+        <th style="text-align:right">Dana Pengabdian</th>
+      </tr></thead>
+      <tbody id="tbIndikator"></tbody>
+    </table>
+  </div>
 </div>
 
 <!-- PUBLIKASI -->
@@ -351,7 +372,7 @@ const PAL=[C.gr,C.sk,C.vi,C.am,C.ro,C.gy,C.te];
 
 /* ── STATE ── */
 const DB={years:{},loaded:{},active:'all'};
-const YEARS=[2023,2024,2025,2026];
+const YEARS=[2019,2020,2021,2022,2023,2024,2025,2026];
 let CH={};
 
 /* ── PAGINATION STATE ── */
@@ -536,16 +557,16 @@ function ms(arr){return arr.map(s=>`<div class="ms"><div class="msv">${s.v}</div
 function ab(v){const m={S1:'bs1',S2:'bs2',S3:'bs3',S4:'bs4',S5:'bs5',S6:'bs6',Q1:'bq1',Q2:'bq2',Q3:'bq3',Q4:'bq4',Core:'bs2'};return`<span class="b ${m[v]||'bnu'}">${v||'–'}</span>`;}
 
 /* ── PAGINATION ENGINE ── */
-function initPg(id,data,renderFn){
-  PG[id]={data,filtered:data,page:1,q:''};
-  renderFn(id);
+function initPg(id,data,renderFnStr,tbodyId){
+  PG[id]={data,filtered:data,page:1,q:'',renderFn:renderFnStr,tbody:tbodyId};
+  window[renderFnStr](id,tbodyId);
 }
 function pgData(id){
   const s=PG[id];if(!s)return[];
   const start=(s.page-1)*PG_SIZE;
   return s.filtered.slice(start,start+PG_SIZE);
 }
-function renderPgn(id,tbodyId,renderFn){
+function renderPgn(id){
   const s=PG[id];if(!s)return;
   const total=s.filtered.length;
   const pages=Math.max(1,Math.ceil(total/PG_SIZE));
@@ -554,33 +575,30 @@ function renderPgn(id,tbodyId,renderFn){
   const end=Math.min(s.page*PG_SIZE,total);
   let btns='';
   if(pages<=7){
-    for(let i=1;i<=pages;i++)btns+=`<button class="pgb${i===s.page?' active':''}" onclick="goPage('${id}','${tbodyId}',${i},'${renderFn}')">${i}</button>`;
+    for(let i=1;i<=pages;i++)btns+=`<button class="pgb${i===s.page?' active':''}" onclick="goPage('${id}',${i})">${i}</button>`;
   }else{
     const show=new Set([1,2,s.page-1,s.page,s.page+1,pages-1,pages].filter(x=>x>=1&&x<=pages));
     const arr=[...show].sort((a,b)=>a-b);
     let prev=0;
     arr.forEach(p=>{
       if(prev&&p-prev>1)btns+=`<button class="pgb" disabled>…</button>`;
-      btns+=`<button class="pgb${p===s.page?' active':''}" onclick="goPage('${id}','${tbodyId}',${p},'${renderFn}')">${p}</button>`;
+      btns+=`<button class="pgb${p===s.page?' active':''}" onclick="goPage('${id}',${p})">${p}</button>`;
       prev=p;
     });
   }
-  el.innerHTML=`<span class="pgn-info">${total>0?start+'–'+end+' dari '+nt(total)+' data':'0 data'}</span><div class="pgn-btns"><button class="pgb" onclick="goPage('${id}','${tbodyId}',${s.page-1},'${renderFn}')" ${s.page<=1?'disabled':''}>‹</button>${btns}<button class="pgb" onclick="goPage('${id}','${tbodyId}',${s.page+1},'${renderFn}')" ${s.page>=pages?'disabled':''}>›</button></div>`;
+  el.innerHTML=`<span class="pgn-info">${total>0?start+'–'+end+' dari '+nt(total)+' data':'0 data'}</span><div class="pgn-btns"><button class="pgb" onclick="goPage('${id}',${s.page-1})" ${s.page<=1?'disabled':''}>‹</button>${btns}<button class="pgb" onclick="goPage('${id}',${s.page+1})" ${s.page>=pages?'disabled':''}>›</button></div>`;
 }
-function goPage(pgId,tbodyId,page,renderFn){
+function goPage(pgId,page){
   const s=PG[pgId];if(!s)return;
   const pages=Math.max(1,Math.ceil(s.filtered.length/PG_SIZE));
   s.page=Math.max(1,Math.min(page,pages));
-  window[renderFn](pgId,tbodyId);
+  window[s.renderFn](pgId,s.tbody);
 }
 function srchPg(pgId,q){
   const s=PG[pgId];if(!s)return;
   s.q=q.toLowerCase();s.page=1;
   s.filtered=q?s.data.filter(r=>Object.values(r).some(v=>String(v||'').toLowerCase().includes(s.q))):s.data;
-  // Find render fn from id
-  const fnMap={pgGs:'renderGsTbl',pgSc:'renderScTbl',pgBk:'renderBkTbl',pgRes:'renderResTbl',pgCom:'renderComTbl',pgHki:'renderHkiTbl'};
-  const tbMap={pgGs:'tGs',pgSc:'tSc',pgBk:'tBk',pgRes:'tRes',pgCom:'tCom',pgHki:'tHki'};
-  if(fnMap[pgId])window[fnMap[pgId]](pgId,tbMap[pgId]);
+  window[s.renderFn](pgId,s.tbody);
 }
 function srch(tbodyId,q){
   const t=document.getElementById(tbodyId);if(!t)return;
@@ -606,6 +624,7 @@ function renderAll(){
   const y=DB.active;
   buildKPI(y);buildOvCharts(y);buildTopCit(y);
   buildPub(y);buildIntl(y);buildBook(y);buildRes(y);buildCom(y);buildHki(y);
+  buildIndicatorTable();
   updateNC(y);
   if(document.getElementById('chipYearPub'))document.getElementById('chipYearPub').textContent=y==='all'?'All Years':`Tahun ${y}`;
 }
@@ -710,13 +729,13 @@ function buildPub(y){
   rc('cGarTr','bar',{labels:yrs,datasets:[{label:'Garuda',data:yrs.map(y=>DB.years[y]?.garuda?.length||0),backgroundColor:C.sk+'cc',borderRadius:6}]},bo(false));
   // Table with pagination
   const sorted=[...gs].sort((a,b)=>(+b.CITATION||0)-(+a.CITATION||0));
-  initPg('pgGs',sorted,function(id){renderGsTbl(id,'tGs');});
+  initPg('pgGs',sorted,'renderGsTbl','tGs');
 }
 function renderGsTbl(pgId,tbodyId){
   const rows=pgData(pgId);
   const start=(PG[pgId].page-1)*PG_SIZE;
   document.getElementById(tbodyId).innerHTML=rows.length?rows.map((r,i)=>`<tr><td class="tdn" style="color:var(--t4)">${start+i+1}</td><td class="tdm">${tr(r.TITLE,80)}<div class="tds">${tr(r.JOURNAL,55)}</div></td><td style="font-size:11px;max-width:110px">${tr(r.JOURNAL,25)}</td><td style="font-size:11px">${tr(r.AUTHORS,30)}</td><td>${ab(r.ACCREDITATION||'-')}</td><td class="tdn" style="text-align:right;color:var(--ac2);font-weight:600">${+r.CITATION||0}</td></tr>`).join(''):er(6);
-  renderPgn(pgId,tbodyId,'renderGsTbl');
+  renderPgn(pgId);
 }
 
 /* ── SCOPUS & WOS ── */
@@ -731,13 +750,13 @@ function buildIntl(y){
   const qc=cnt(sc,r=>r.QUARTILE||'-');
   const qL=['Q1','Q2','Q3','Q4'],qV=qL.map(l=>qc[l]||0);
   rc('cScQ','doughnut',{labels:qL,datasets:[{data:qV,backgroundColor:[C.gr,C.sk,C.am,C.ro],borderWidth:0,hoverOffset:6}]},{...dOpts(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b7280',boxWidth:9,padding:12}},tooltip:tt()}});
-  initPg('pgSc',[...sc],function(id){renderScTbl(id,'tSc');});
+  initPg('pgSc',[...sc],'renderScTbl','tSc');
   document.getElementById('tWos').innerHTML=wos.length?wos.map((r,i)=>`<tr><td class="tdn" style="color:var(--t4)">${i+1}</td><td class="tdm">${tr(r.TITLE,80)}<div class="tds">${tr(r.JOURNAL,55)}</div></td><td style="font-size:11px">${tr(r.JOURNAL,30)}</td><td style="font-size:11px">${r.AUTHOR||'–'}</td><td><span class="b bs2">${r.CORE||'–'}</span></td><td class="tdn" style="text-align:right;color:var(--ac2);font-weight:600">${+r.CITATION||0}</td></tr>`).join(''):er(6);
 }
 function renderScTbl(pgId,tbodyId){
   const rows=pgData(pgId);const start=(PG[pgId].page-1)*PG_SIZE;
   document.getElementById(tbodyId).innerHTML=rows.length?rows.map((r,i)=>`<tr><td class="tdn" style="color:var(--t4)">${start+i+1}</td><td class="tdm">${tr(r.TITLE,80)}<div class="tds">${tr(r.PUBLICATION_NAME,55)}</div></td><td style="font-size:11px">${tr(r.PUBLICATION_NAME,28)}</td><td style="font-size:11px">${r.CREATOR||'–'}</td><td>${ab(r.QUARTILE||'-')}</td><td class="tdn" style="text-align:right;color:var(--ac2);font-weight:600">${+r.CITATION||0}</td></tr>`).join(''):er(6);
-  renderPgn(pgId,tbodyId,'renderScTbl');
+  renderPgn(pgId);
 }
 
 /* ── BUKU ── */
@@ -751,12 +770,12 @@ function buildBook(y){
   const kL=Object.keys(kc);
   rc('cBkKt','doughnut',{labels:kL,datasets:[{data:kL.map(k=>kc[k]),backgroundColor:PAL,borderWidth:0,hoverOffset:6}]},{...dOpts(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b7280',boxWidth:9,padding:12}},tooltip:tt()}});
   const sorted=[...rows].sort((a,b)=>(b['TAHUN TERBIT']||0)-(a['TAHUN TERBIT']||0));
-  initPg('pgBk',sorted,function(id){renderBkTbl(id,'tBk');});
+  initPg('pgBk',sorted,'renderBkTbl','tBk');
 }
 function renderBkTbl(pgId,tbodyId){
   const rows=pgData(pgId);const start=(PG[pgId].page-1)*PG_SIZE;
   document.getElementById(tbodyId).innerHTML=rows.length?rows.map((r,i)=>`<tr><td class="tdn" style="color:var(--t4)">${start+i+1}</td><td class="tdm">${tr(r.TITLE,80)}</td><td style="font-size:11.5px">${tr(r.AUTHOR,40)}</td><td style="font-size:11.5px">${r.PENERBIT||'–'}</td><td><span class="b bs3">${r.KATEGORI||'–'}</span></td><td class="tdn">${r['TAHUN TERBIT']||'–'}</td></tr>`).join(''):er(6);
-  renderPgn(pgId,tbodyId,'renderBkTbl');
+  renderPgn(pgId);
 }
 
 /* ── PENELITIAN ── */
@@ -774,12 +793,12 @@ function buildRes(y){
   const hib=cntSum(rows,r=>r['PROGRAM HIBAH']||'Tidak Diketahui',r=>parseDana(r['DANA DISETUJUI']));
   document.getElementById('tResHibah').innerHTML=Object.entries(hib).sort((a,b)=>b[1].sum-a[1].sum).map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right;font-family:'JetBrains Mono',monospace">${v.count}</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--gr)">${fmtDana(v.sum)}</td></tr>`).join('')||`<tr><td colspan="3" style="text-align:center;color:var(--t4);padding:16px">–</td></tr>`;
   const sorted=[...rows].sort((a,b)=>(b['TAHUN PELAKSANAAN KEGIATAN']||0)-(a['TAHUN PELAKSANAAN KEGIATAN']||0));
-  initPg('pgRes',sorted,function(id){renderResTbl(id,'tRes');});
+  initPg('pgRes',sorted,'renderResTbl','tRes');
 }
 function renderResTbl(pgId,tbodyId){
   const rows=pgData(pgId);const start=(PG[pgId].page-1)*PG_SIZE;
   document.getElementById(tbodyId).innerHTML=rows.length?rows.map((r,i)=>`<tr><td class="tdn" style="color:var(--t4)">${start+i+1}</td><td class="tdm">${tr(r.TITLE,75)}</td><td style="font-size:11.5px;white-space:nowrap">${r['NAMA KETUA']||'–'}</td><td><span class="b bs3">${r['NAMA SINGKAT SKEMA']||'–'}</span></td><td style="font-size:11px">${tr(r['PROGRAM HIBAH']||'–',25)}</td><td class="tdn" style="color:var(--gr);white-space:nowrap;font-size:10.5px">${r['DANA DISETUJUI']||'–'}</td><td style="font-size:11px">${tr(r['BIDANG FOKUS']||'–',22)}</td><td class="tdn">${r['TAHUN PELAKSANAAN KEGIATAN']||'–'}</td></tr>`).join(''):er(8);
-  renderPgn(pgId,tbodyId,'renderResTbl');
+  renderPgn(pgId);
 }
 
 /* ── PENGABDIAN ── */
@@ -797,12 +816,12 @@ function buildCom(y){
   const hib=cntSum(rows,r=>r['PROGRAM HIBAH']||'Tidak Diketahui',r=>parseDana(r['DANA DISETUJUI']));
   document.getElementById('tComHibah').innerHTML=Object.entries(hib).sort((a,b)=>b[1].sum-a[1].sum).map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right;font-family:'JetBrains Mono',monospace">${v.count}</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--sk)">${fmtDana(v.sum)}</td></tr>`).join('')||`<tr><td colspan="3" style="text-align:center;color:var(--t4);padding:16px">–</td></tr>`;
   const sorted=[...rows].sort((a,b)=>(b['TAHUN PELAKSANAAN KEGIATAN']||0)-(a['TAHUN PELAKSANAAN KEGIATAN']||0));
-  initPg('pgCom',sorted,function(id){renderComTbl(id,'tCom');});
+  initPg('pgCom',sorted,'renderComTbl','tCom');
 }
 function renderComTbl(pgId,tbodyId){
   const rows=pgData(pgId);const start=(PG[pgId].page-1)*PG_SIZE;
   document.getElementById(tbodyId).innerHTML=rows.length?rows.map((r,i)=>`<tr><td class="tdn" style="color:var(--t4)">${start+i+1}</td><td class="tdm">${tr(r.TITLE,75)}</td><td style="font-size:11.5px;white-space:nowrap">${r['NAMA KETUA']||'–'}</td><td><span class="b bs2">${r['NAMA SINGKAT SKEMA']||'–'}</span></td><td style="font-size:11px">${tr(r['PROGRAM HIBAH']||'–',25)}</td><td class="tdn" style="color:var(--sk);white-space:nowrap;font-size:10.5px">${r['DANA DISETUJUI']||'–'}</td><td style="font-size:11px">${tr(r['BIDANG FOKUS']||'–',22)}</td><td class="tdn">${r['TAHUN PELAKSANAAN KEGIATAN']||'–'}</td></tr>`).join(''):er(8);
-  renderPgn(pgId,tbodyId,'renderComTbl');
+  renderPgn(pgId);
 }
 
 /* ── HKI ── */
@@ -817,12 +836,12 @@ function buildHki(y){
   const kL=Object.keys(kc);
   rc('cHkiKt','doughnut',{labels:kL,datasets:[{data:kL.map(k=>kc[k]),backgroundColor:PAL,borderWidth:0,hoverOffset:6}]},{...dOpts(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b7280',boxWidth:9,padding:12}},tooltip:tt()}});
   const sorted=[...rows].sort((a,b)=>(b.TAHUN_PERMOHONAN||0)-(a.TAHUN_PERMOHONAN||0));
-  initPg('pgHki',sorted,function(id){renderHkiTbl(id,'tHki');});
+  initPg('pgHki',sorted,'renderHkiTbl','tHki');
 }
 function renderHkiTbl(pgId,tbodyId){
   const rows=pgData(pgId);const start=(PG[pgId].page-1)*PG_SIZE;
   document.getElementById(tbodyId).innerHTML=rows.length?rows.map((r,i)=>`<tr><td class="tdn" style="color:var(--t4)">${start+i+1}</td><td class="tdm">${tr(r.TITLE,75)}</td><td style="font-size:11.5px">${tr(r.INVENTOR,35)}</td><td><span class="b bs4">${r.KATEGORI||'–'}</span></td><td class="tdn" style="font-size:10.5px">${r.NO_REGISTRASI||'–'}</td><td><span class="b ${normStatus(r.STATUS)==='Diterima'?'bok':'bwn'}">${normStatus(r.STATUS)}</span></td><td class="tdn">${r.TAHUN_PERMOHONAN||'–'}</td></tr>`).join(''):er(7);
-  renderPgn(pgId,tbodyId,'renderHkiTbl');
+  renderPgn(pgId);
 }
 
 /* ── FILE STATUS ── */
@@ -832,6 +851,60 @@ function buildFsg(){
   document.getElementById('fsg').innerHTML=yrs.map(y=>`
     <div class="shd" style="margin-top:16px">Tahun ${y}</div>
     <div class="fg">${FP.map(p=>{const ok=DB.loaded[y]?.includes(p.key);const c=DB.years[y]?.[p.key]?.length||0;return`<div class="fs ${ok?'loaded':'missing'}"><div class="fi">${ok?'📊':'📁'}</div><div><div class="fn">${p.label}</div><div class="fm">${ok?c+' records · '+y:'Belum diupload'}</div></div></div>`;}).join('')}</div>`).join('');
+}
+
+/* ── INDICATOR TABLE ── */
+function buildIndicatorTable(){
+  const yrs=gy().sort();
+  if(!yrs.length){document.getElementById('tbIndikator').innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--t4);padding:24px">Belum ada data</td></tr>';return;}
+  // totals row
+  const totals={gs:0,gar:0,sc:0,wos:0,bk:0,res:0,com:0,ipr:0,cit:0,resDana:0,comDana:0};
+  const rows=yrs.map(y=>{
+    const gs=DB.years[y]?.google?.length||0;
+    const gar=DB.years[y]?.garuda?.length||0;
+    const sc=DB.years[y]?.scopus?.length||0;
+    const wos=DB.years[y]?.wos?.length||0;
+    const bk=DB.years[y]?.book?.length||0;
+    const res=DB.years[y]?.research?.length||0;
+    const com=DB.years[y]?.com?.length||0;
+    const ipr=DB.years[y]?.ipr?.length||0;
+    const cit=(DB.years[y]?.google||[]).reduce((a,r)=>a+(+r.CITATION||0),0);
+    const resDana=(DB.years[y]?.research||[]).reduce((a,r)=>a+parseDana(r['DANA DISETUJUI']),0);
+    const comDana=(DB.years[y]?.com||[]).reduce((a,r)=>a+parseDana(r['DANA DISETUJUI']),0);
+    totals.gs+=gs;totals.gar+=gar;totals.sc+=sc;totals.wos+=wos;totals.bk+=bk;
+    totals.res+=res;totals.com+=com;totals.ipr+=ipr;totals.cit+=cit;totals.resDana+=resDana;totals.comDana+=comDana;
+    const hasData=DB.loaded[y]&&DB.loaded[y].length>0;
+    return`<tr style="${hasData?'':'opacity:.35'}">
+      <td class="tdn" style="font-weight:600;color:var(--t1)">${y}${hasData?'':'<span style="font-size:9px;color:var(--t4);margin-left:4px">–</span>'}</td>
+      <td style="text-align:right">${gs?'<span style="color:var(--ac2);font-family:JetBrains Mono,monospace;font-weight:600">'+nt(gs)+'</span>':'<span style="color:var(--t4)">–</span>'}</td>
+      <td style="text-align:right">${gar?'<span style="color:var(--sk);font-family:JetBrains Mono,monospace;font-weight:600">'+nt(gar)+'</span>':'<span style="color:var(--t4)">–</span>'}</td>
+      <td style="text-align:right">${sc?'<span style="color:var(--vi);font-family:JetBrains Mono,monospace;font-weight:600">'+nt(sc)+'</span>':'<span style="color:var(--t4)">–</span>'}</td>
+      <td style="text-align:right">${wos?'<span style="color:var(--am);font-family:JetBrains Mono,monospace;font-weight:600">'+nt(wos)+'</span>':'<span style="color:var(--t4)">–</span>'}</td>
+      <td style="text-align:right">${bk?nt(bk):'<span style="color:var(--t4)">–</span>'}</td>
+      <td style="text-align:right">${res?nt(res):'<span style="color:var(--t4)">–</span>'}</td>
+      <td style="text-align:right">${com?nt(com):'<span style="color:var(--t4)">–</span>'}</td>
+      <td style="text-align:right">${ipr?nt(ipr):'<span style="color:var(--t4)">–</span>'}</td>
+      <td style="text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">${cit?nt(cit):'<span style="color:var(--t4)">–</span>'}</td>
+      <td style="text-align:right;font-family:JetBrains Mono,monospace;font-size:10.5px;color:var(--gr)">${resDana?'Rp '+Math.round(resDana/1e6)+'Jt':'<span style="color:var(--t4)">–</span>'}</td>
+      <td style="text-align:right;font-family:JetBrains Mono,monospace;font-size:10.5px;color:var(--sk)">${comDana?'Rp '+Math.round(comDana/1e6)+'Jt':'<span style="color:var(--t4)">–</span>'}</td>
+    </tr>`;
+  });
+  // Total row
+  rows.push(`<tr style="background:var(--bg3);font-weight:700;border-top:2px solid var(--bd2)">
+    <td class="tdn" style="color:var(--t1)">TOTAL</td>
+    <td style="text-align:right;color:var(--ac2);font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.gs)}</td>
+    <td style="text-align:right;color:var(--sk);font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.gar)}</td>
+    <td style="text-align:right;color:var(--vi);font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.sc)}</td>
+    <td style="text-align:right;color:var(--am);font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.wos)}</td>
+    <td style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.bk)}</td>
+    <td style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.res)}</td>
+    <td style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.com)}</td>
+    <td style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.ipr)}</td>
+    <td style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.cit)}</td>
+    <td style="text-align:right;color:var(--gr);font-family:JetBrains Mono,monospace;font-weight:700">Rp ${Math.round(totals.resDana/1e6)}Jt</td>
+    <td style="text-align:right;color:var(--sk);font-family:JetBrains Mono,monospace;font-weight:700">Rp ${Math.round(totals.comDana/1e6)}Jt</td>
+  </tr>`);
+  document.getElementById('tbIndikator').innerHTML=rows.join('');
 }
 
 /* ── NAVIGATION ── */
