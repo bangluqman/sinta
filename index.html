@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SINTA Dashboard — Universitas Yudharta Pasuruan</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -177,7 +176,18 @@ tbody tr:hover td{background:var(--bg3)}
 </head>
 <body>
 
-<div class="lov" id="lov"><div class="spin"></div><div class="ltx" id="ltx">Memuat data...</div></div>
+<div class="lov" id="lov">
+  <div style="text-align:center;max-width:320px;width:90%">
+    <div style="font-family:'Playfair Display',serif;font-size:18px;color:var(--t1);margin-bottom:6px">Universitas Yudharta Pasuruan</div>
+    <div style="font-size:11.5px;color:var(--t3);margin-bottom:24px;font-family:'JetBrains Mono',monospace">SINTA Research Dashboard</div>
+    <div class="spin" style="margin:0 auto 16px"></div>
+    <div class="ltx" id="ltx">Memuat data...</div>
+    <div style="margin-top:14px;background:var(--bd);border-radius:4px;height:5px;overflow:hidden">
+      <div id="lovBar" style="height:100%;background:var(--ac2);border-radius:4px;width:0%;transition:width .3s ease"></div>
+    </div>
+    <div style="margin-top:8px;font-size:10.5px;color:var(--t4);font-family:'JetBrains Mono',monospace" id="lovDetail"></div>
+  </div>
+</div>
 
 <div class="shell">
 <aside class="sb">
@@ -200,6 +210,7 @@ tbody tr:hover td{background:var(--bg3)}
     <a class="ni" onclick="nav(this,'hki')"><span class="ni-icon">🏆</span>HKI / IPR<span class="ni-cnt" id="nc-ipr">–</span></a>
     <div class="nl">Kelola</div>
     <a class="ni" onclick="nav(this,'cfg')"><span class="ni-icon">⚙</span>Status Data</a>
+    <a class="ni" href="konversi.html" target="_blank"><span class="ni-icon">🔄</span>Konversi xlsx → JSON</a>
   </nav>
   <div class="sb-bot">
     <div class="yl">Filter Tahun</div>
@@ -408,21 +419,7 @@ function detectRepoBase(){
   return'DEMO';
 }
 
-/* ── XLSX PARSING ── */
-function wsToRows(ws){
-  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
-  if(raw.length<5)return[];
-  const hdrs=raw[4].map(h=>h?String(h).trim():null);
-  const out=[];
-  for(let i=5;i<raw.length;i++){
-    const row=raw[i];
-    if(!row||row.every(v=>v===null||v===undefined||v===''))continue;
-    const obj={};
-    hdrs.forEach((h,j)=>{if(h)obj[h]=row[j];});
-    out.push(obj);
-  }
-  return out;
-}
+/* ── DATA HELPERS ── */
 function parseDana(s){return s?parseInt(String(s).replace(/[^0-9]/g,''))||0:0;}
 function normStatus(s){
   if(!s)return'Diproses';
@@ -432,36 +429,49 @@ function normStatus(s){
 }
 function fmtDana(n){return'Rp '+n.toLocaleString('id-ID');}
 
-/* ── LOAD DATA ── */
+/* ── LOAD DATA (JSON-based, parallel fetch) ── */
 async function loadAll(base){
   if(base==='DEMO'){loadDemo();return;}
-  setLov(true,'Menghubungi repository...');
+  setLov(true,'Memeriksa data tersedia...',0,'');
   DB.years={};DB.loaded={};
-  for(const y of YEARS){
-    DB.years[y]={};DB.loaded[y]=[];
-    const files=[
-      {key:'ipr',url:`${base}/${y}/export_ipr_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
-      {key:'com',url:`${base}/${y}/export_com_service_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
-      {key:'google',url:`${base}/${y}/export_google_publication_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
-      {key:'research',url:`${base}/${y}/export_research_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
-      {key:'wos',url:`${base}/${y}/export_wos_publication_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
-      {key:'book',url:`${base}/${y}/export_book_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
-      {key:'garuda',url:`${base}/${y}/export_garuda_publication_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
-      {key:'scopus',url:`${base}/${y}/export_scopus_publication_${y}_Universitas_Yudharta_Pasuruan.xlsx`},
-    ];
-    for(const f of files){
-      try{
-        setLov(true,`Memuat ${y} · ${f.key}...`);
-        const res=await fetch(f.url);
-        if(!res.ok)continue;
-        const buf=await res.arrayBuffer();
-        const wb=XLSX.read(buf,{type:'array'});
-        const rows=wsToRows(wb.Sheets[wb.SheetNames[0]]);
-        DB.years[y][f.key]=rows;
-        DB.loaded[y].push(f.key);
-      }catch(e){}
-    }
+
+  // Phase 1: probe which years have data.json (parallel)
+  const probes=await Promise.allSettled(
+    YEARS.map(y=>fetch(`${base}/${y}/data.json`,{method:'HEAD'}).then(r=>({y,ok:r.ok})).catch(()=>({y,ok:false})))
+  );
+  const available=probes.filter(p=>p.status==='fulfilled'&&p.value.ok).map(p=>p.value.y);
+
+  if(available.length===0){
+    setLov(true,'Tidak ada data.json di repo. Jalankan convert_sinta.py terlebih dahulu.',100,'');
+    setTimeout(()=>{setLov(false);loadDemo();},3000);
+    return;
   }
+
+  // Phase 2: fetch all available years in parallel
+  const total=available.length;
+  let done=0;
+  setLov(true,`Mengunduh data ${available[0]}–${available[available.length-1]}...`,5,`0 / ${total} tahun`);
+
+  const results=await Promise.allSettled(
+    available.map(async y=>{
+      const res=await fetch(`${base}/${y}/data.json`);
+      if(!res.ok)throw new Error(`HTTP ${res.status}`);
+      const json=await res.json();
+      done++;
+      const pct=Math.round(10+done/total*85);
+      setLov(true,`Memuat ${y}...`,pct,`${done} / ${total} tahun`);
+      return{y,json};
+    })
+  );
+
+  setLov(true,'Memproses data...',97,'');
+  for(const r of results){
+    if(r.status!=='fulfilled')continue;
+    const{y,json}=r.value;
+    DB.years[y]=json.data||{};
+    DB.loaded[y]=Object.keys(DB.years[y]);
+  }
+
   setLov(false);
   onReady();
 }
@@ -609,7 +619,7 @@ function srch(tbodyId,q){
 function onReady(){
   buildPills();renderAll();setLov(false);
   const yrs=gy();
-  document.getElementById('sbBadge').textContent=`Data: ${yrs.join(', ')}`;
+  document.getElementById('sbBadge').textContent=`JSON · ${yrs.join(', ')}`;
   document.getElementById('chipSt').textContent=`✓ ${yrs.length} tahun dimuat`;
   document.getElementById('chipSt').classList.replace('warn','ok');
   buildFsg();
@@ -927,10 +937,16 @@ function setTheme(el){
   el.classList.add('active');
   document.documentElement.setAttribute('data-theme',el.dataset.t);
 }
-function setLov(on,msg){
+function setLov(on,msg,pct,detail){
   const el=document.getElementById('lov');
-  if(on){el.classList.remove('hidden');if(msg)document.getElementById('ltx').textContent=msg;}
-  else el.classList.add('hidden');
+  if(on){
+    el.classList.remove('hidden');
+    if(msg)document.getElementById('ltx').textContent=msg;
+    if(pct!==undefined){const b=document.getElementById('lovBar');if(b)b.style.width=pct+'%';}
+    if(detail!==undefined){const d=document.getElementById('lovDetail');if(d)d.textContent=detail;}
+  } else {
+    el.classList.add('hidden');
+  }
 }
 
 /* ── INIT ── */
