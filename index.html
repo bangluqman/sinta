@@ -244,30 +244,17 @@ tbody tr:hover td{background:var(--bg3)}
     <div class="card"><div class="ch"><div><div class="ct">Dana Penelitian &amp; Pengabdian</div><div class="cs">Juta Rp per tahun</div></div></div><canvas id="cDana" height="190"></canvas></div>
     <div class="card"><div class="ch"><div><div class="ct">Sitasi Google Scholar</div><div class="cs">Kumulatif per tahun</div></div></div><canvas id="cCit" height="190"></canvas></div>
   </div>
-  <div class="shd">Top Publikasi Tersitasi</div>
-  <div class="tw"><div class="tth"><h3>10 Paling Banyak Disitasi</h3><div class="sb-inp">🔍<input type="text" id="srchTop" placeholder="Cari..." oninput="srch('tTop',this.value)"></div></div>
-  <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Penulis</th><th>DB</th><th>Akred</th><th style="text-align:right">Sitasi</th></tr></thead><tbody id="tTop"></tbody></table></div></div>
-  <div class="shd">Tabel Indikator SINTA per Tahun</div>
-  <div class="tw" style="overflow-x:auto">
-    <div class="tth"><h3>Rekap Semua Indikator per Tahun</h3></div>
-    <table id="tIndikator">
-      <thead><tr>
-        <th>Tahun</th>
-        <th style="text-align:right">Google Scholar</th>
-        <th style="text-align:right">Garuda</th>
-        <th style="text-align:right">Scopus</th>
-        <th style="text-align:right">WoS</th>
-        <th style="text-align:right">Buku</th>
-        <th style="text-align:right">Penelitian</th>
-        <th style="text-align:right">Pengabdian</th>
-        <th style="text-align:right">HKI</th>
-        <th style="text-align:right">Sitasi GS</th>
-        <th style="text-align:right">Dana Penelitian</th>
-        <th style="text-align:right">Dana Pengabdian</th>
-      </tr></thead>
+  <div class="shd">Rekap Semua Indikator per Tahun</div>
+  <div class="tw" style="overflow-x:auto;margin-bottom:0">
+    <table id="tIndikator" style="min-width:600px">
+      <thead id="thIndikator"></thead>
       <tbody id="tbIndikator"></tbody>
     </table>
   </div>
+
+  <div class="shd">Top Publikasi Tersitasi</div>
+  <div class="tw"><div class="tth"><h3>10 Paling Banyak Disitasi</h3><div class="sb-inp">🔍<input type="text" id="srchTop" placeholder="Cari..." oninput="srch('tTop',this.value)"></div></div>
+  <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Penulis</th><th>DB</th><th>Akred</th><th style="text-align:right">Sitasi</th></tr></thead><tbody id="tTop"></tbody></table></div></div>
 </div>
 
 <!-- PUBLIKASI -->
@@ -405,18 +392,11 @@ const FP=[
 /* ── AUTO DETECT REPO URL ── */
 function detectRepoBase(){
   const loc=window.location.href;
-  // Running on GitHub Pages: https://username.github.io/reponame/...
-  const ghPages=/https?:\/\/([^.]+)\.github\.io\/([^\/]+)/;
-  const m=loc.match(ghPages);
-  if(m){
-    return`https://raw.githubusercontent.com/${m[1]}/${m[2]}/main/data`;
-  }
-  // Running locally or custom domain — try relative path first
-  if(loc.includes('localhost')||loc.includes('127.0.0.1')||loc.startsWith('file://')){
-    return'DEMO';
-  }
-  // Custom domain on GitHub Pages (CNAME) — fallback to DEMO
-  return'DEMO';
+  // Jika akses via file:// — pakai DEMO
+  if(loc.startsWith('file://')) return 'DEMO';
+  // Coba relative path 'data' — bekerja di GitHub Pages, hosting apapun, dan localhost
+  // loadAll() akan probe dulu apakah ada data.json, jika tidak ada fallback ke DEMO
+  return 'RELATIVE';
 }
 
 /* ── DATA HELPERS ── */
@@ -432,34 +412,64 @@ function fmtDana(n){return'Rp '+n.toLocaleString('id-ID');}
 /* ── LOAD DATA (JSON-based, parallel fetch) ── */
 async function loadAll(base){
   if(base==='DEMO'){loadDemo();return;}
+
+  // Tentukan base URL
+  // RELATIVE: pakai path relatif dari lokasi index.html
+  let baseUrl;
+  if(base==='RELATIVE'){
+    // Ambil base path dari URL halaman ini, lalu tambah /data
+    const pagePath=window.location.href.split('?')[0].split('#')[0];
+    const pageDir=pagePath.substring(0,pagePath.lastIndexOf('/')+1);
+    baseUrl=pageDir+'data';
+  } else {
+    baseUrl=base;
+  }
+
   setLov(true,'Memeriksa data tersedia...',0,'');
   DB.years={};DB.loaded={};
 
-  // Phase 1: probe which years have data.json (parallel)
+  // Phase 1: probe tahun yang tersedia — gunakan GET bukan HEAD
+  // (HEAD sering diblok CORS di raw.githubusercontent.com)
   const probes=await Promise.allSettled(
-    YEARS.map(y=>fetch(`${base}/${y}/data.json`,{method:'HEAD'}).then(r=>({y,ok:r.ok})).catch(()=>({y,ok:false})))
+    YEARS.map(y=>
+      fetch(`${baseUrl}/${y}/data.json`)
+        .then(r=>({y,ok:r.ok}))
+        .catch(()=>({y,ok:false}))
+    )
   );
   const available=probes.filter(p=>p.status==='fulfilled'&&p.value.ok).map(p=>p.value.y);
 
   if(available.length===0){
-    setLov(true,'Tidak ada data.json di repo. Jalankan convert_sinta.py terlebih dahulu.',100,'');
-    setTimeout(()=>{setLov(false);loadDemo();},3000);
+    // Coba juga GitHub raw URL otomatis jika sedang di GitHub Pages
+    const loc=window.location.href;
+    const ghPages=/https?:\/\/([^.]+)\.github\.io\/([^\/]+)/;
+    const m=loc.match(ghPages);
+    if(m){
+      const rawBase=`https://raw.githubusercontent.com/${m[1]}/${m[2]}/main/data`;
+      if(rawBase!==baseUrl){
+        setLov(true,'Mencoba URL GitHub raw...',10,'');
+        await loadAll(rawBase);
+        return;
+      }
+    }
+    setLov(true,'Data tidak ditemukan — menampilkan data demo',100,'');
+    setTimeout(()=>{setLov(false);loadDemo();},2000);
     return;
   }
 
-  // Phase 2: fetch all available years in parallel
+  // Phase 2: fetch semua tahun tersedia secara paralel
   const total=available.length;
   let done=0;
-  setLov(true,`Mengunduh data ${available[0]}–${available[available.length-1]}...`,5,`0 / ${total} tahun`);
+  setLov(true,`Mengunduh ${total} tahun data...`,5,`0 / ${total} tahun`);
 
   const results=await Promise.allSettled(
     available.map(async y=>{
-      const res=await fetch(`${base}/${y}/data.json`);
+      const res=await fetch(`${baseUrl}/${y}/data.json`);
       if(!res.ok)throw new Error(`HTTP ${res.status}`);
       const json=await res.json();
       done++;
       const pct=Math.round(10+done/total*85);
-      setLov(true,`Memuat ${y}...`,pct,`${done} / ${total} tahun`);
+      setLov(true,`Memuat tahun ${y}...`,pct,`${done} / ${total} tahun`);
       return{y,json};
     })
   );
@@ -863,58 +873,77 @@ function buildFsg(){
     <div class="fg">${FP.map(p=>{const ok=DB.loaded[y]?.includes(p.key);const c=DB.years[y]?.[p.key]?.length||0;return`<div class="fs ${ok?'loaded':'missing'}"><div class="fi">${ok?'📊':'📁'}</div><div><div class="fn">${p.label}</div><div class="fm">${ok?c+' records · '+y:'Belum diupload'}</div></div></div>`;}).join('')}</div>`).join('');
 }
 
-/* ── INDICATOR TABLE ── */
+/* ── INDICATOR TABLE (transpose: indikator=baris, tahun=kolom) ── */
 function buildIndicatorTable(){
   const yrs=gy().sort();
-  if(!yrs.length){document.getElementById('tbIndikator').innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--t4);padding:24px">Belum ada data</td></tr>';return;}
-  // totals row
+  const thead=document.getElementById('thIndikator');
+  const tbody=document.getElementById('tbIndikator');
+  if(!yrs.length){
+    thead.innerHTML='';
+    tbody.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--t4);padding:24px">Belum ada data</td></tr>';
+    return;
+  }
+
+  // Kumpul data per tahun
+  const yData={};
   const totals={gs:0,gar:0,sc:0,wos:0,bk:0,res:0,com:0,ipr:0,cit:0,resDana:0,comDana:0};
-  const rows=yrs.map(y=>{
-    const gs=DB.years[y]?.google?.length||0;
-    const gar=DB.years[y]?.garuda?.length||0;
-    const sc=DB.years[y]?.scopus?.length||0;
-    const wos=DB.years[y]?.wos?.length||0;
-    const bk=DB.years[y]?.book?.length||0;
-    const res=DB.years[y]?.research?.length||0;
-    const com=DB.years[y]?.com?.length||0;
-    const ipr=DB.years[y]?.ipr?.length||0;
-    const cit=(DB.years[y]?.google||[]).reduce((a,r)=>a+(+r.CITATION||0),0);
+  yrs.forEach(y=>{
+    const gs    =DB.years[y]?.google?.length||0;
+    const gar   =DB.years[y]?.garuda?.length||0;
+    const sc    =DB.years[y]?.scopus?.length||0;
+    const wos   =DB.years[y]?.wos?.length||0;
+    const bk    =DB.years[y]?.book?.length||0;
+    const res   =DB.years[y]?.research?.length||0;
+    const com   =DB.years[y]?.com?.length||0;
+    const ipr   =DB.years[y]?.ipr?.length||0;
+    const cit   =(DB.years[y]?.google||[]).reduce((a,r)=>a+(+r.CITATION||0),0);
     const resDana=(DB.years[y]?.research||[]).reduce((a,r)=>a+parseDana(r['DANA DISETUJUI']),0);
     const comDana=(DB.years[y]?.com||[]).reduce((a,r)=>a+parseDana(r['DANA DISETUJUI']),0);
-    totals.gs+=gs;totals.gar+=gar;totals.sc+=sc;totals.wos+=wos;totals.bk+=bk;
-    totals.res+=res;totals.com+=com;totals.ipr+=ipr;totals.cit+=cit;totals.resDana+=resDana;totals.comDana+=comDana;
-    const hasData=DB.loaded[y]&&DB.loaded[y].length>0;
-    return`<tr style="${hasData?'':'opacity:.35'}">
-      <td class="tdn" style="font-weight:600;color:var(--t1)">${y}${hasData?'':'<span style="font-size:9px;color:var(--t4);margin-left:4px">–</span>'}</td>
-      <td style="text-align:right">${gs?'<span style="color:var(--ac2);font-family:JetBrains Mono,monospace;font-weight:600">'+nt(gs)+'</span>':'<span style="color:var(--t4)">–</span>'}</td>
-      <td style="text-align:right">${gar?'<span style="color:var(--sk);font-family:JetBrains Mono,monospace;font-weight:600">'+nt(gar)+'</span>':'<span style="color:var(--t4)">–</span>'}</td>
-      <td style="text-align:right">${sc?'<span style="color:var(--vi);font-family:JetBrains Mono,monospace;font-weight:600">'+nt(sc)+'</span>':'<span style="color:var(--t4)">–</span>'}</td>
-      <td style="text-align:right">${wos?'<span style="color:var(--am);font-family:JetBrains Mono,monospace;font-weight:600">'+nt(wos)+'</span>':'<span style="color:var(--t4)">–</span>'}</td>
-      <td style="text-align:right">${bk?nt(bk):'<span style="color:var(--t4)">–</span>'}</td>
-      <td style="text-align:right">${res?nt(res):'<span style="color:var(--t4)">–</span>'}</td>
-      <td style="text-align:right">${com?nt(com):'<span style="color:var(--t4)">–</span>'}</td>
-      <td style="text-align:right">${ipr?nt(ipr):'<span style="color:var(--t4)">–</span>'}</td>
-      <td style="text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">${cit?nt(cit):'<span style="color:var(--t4)">–</span>'}</td>
-      <td style="text-align:right;font-family:JetBrains Mono,monospace;font-size:10.5px;color:var(--gr)">${resDana?'Rp '+Math.round(resDana/1e6)+'Jt':'<span style="color:var(--t4)">–</span>'}</td>
-      <td style="text-align:right;font-family:JetBrains Mono,monospace;font-size:10.5px;color:var(--sk)">${comDana?'Rp '+Math.round(comDana/1e6)+'Jt':'<span style="color:var(--t4)">–</span>'}</td>
-    </tr>`;
+    yData[y]={gs,gar,sc,wos,bk,res,com,ipr,cit,resDana,comDana};
+    totals.gs+=gs;totals.gar+=gar;totals.sc+=sc;totals.wos+=wos;
+    totals.bk+=bk;totals.res+=res;totals.com+=com;totals.ipr+=ipr;
+    totals.cit+=cit;totals.resDana+=resDana;totals.comDana+=comDana;
   });
-  // Total row
-  rows.push(`<tr style="background:var(--bg3);font-weight:700;border-top:2px solid var(--bd2)">
-    <td class="tdn" style="color:var(--t1)">TOTAL</td>
-    <td style="text-align:right;color:var(--ac2);font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.gs)}</td>
-    <td style="text-align:right;color:var(--sk);font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.gar)}</td>
-    <td style="text-align:right;color:var(--vi);font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.sc)}</td>
-    <td style="text-align:right;color:var(--am);font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.wos)}</td>
-    <td style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.bk)}</td>
-    <td style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.res)}</td>
-    <td style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.com)}</td>
-    <td style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.ipr)}</td>
-    <td style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">${nt(totals.cit)}</td>
-    <td style="text-align:right;color:var(--gr);font-family:JetBrains Mono,monospace;font-weight:700">Rp ${Math.round(totals.resDana/1e6)}Jt</td>
-    <td style="text-align:right;color:var(--sk);font-family:JetBrains Mono,monospace;font-weight:700">Rp ${Math.round(totals.comDana/1e6)}Jt</td>
-  </tr>`);
-  document.getElementById('tbIndikator').innerHTML=rows.join('');
+
+  const hasData=y=>DB.loaded[y]&&DB.loaded[y].length>0;
+
+  // Header: Indikator | 2019 | 2020 | ... | TOTAL
+  const thCols=yrs.map(y=>`<th style="text-align:right;min-width:62px">${y}${!hasData(y)?'<div style=\"font-size:9px;color:var(--t4);font-weight:400\">–</div>':''}</th>`).join('');
+  thead.innerHTML=`<tr><th style="min-width:160px">Indikator</th>${thCols}<th style="text-align:right;min-width:70px;background:var(--bg3)">Total</th></tr>`;
+
+  // Rows: setiap indikator satu baris
+  const indicators=[
+    {lbl:'📄 Google Scholar', key:'gs',      fmt:n=>n?`<span style="color:var(--ac2);font-weight:600">${nt(n)}</span>`:'<span style="color:var(--t4)">–</span>',  total:totals.gs},
+    {lbl:'🗂 Garuda',         key:'gar',     fmt:n=>n?`<span style="color:var(--sk);font-weight:600">${nt(n)}</span>`:'<span style="color:var(--t4)">–</span>',   total:totals.gar},
+    {lbl:'🔬 Scopus',         key:'sc',      fmt:n=>n?`<span style="color:var(--vi);font-weight:600">${nt(n)}</span>`:'<span style="color:var(--t4)">–</span>',   total:totals.sc},
+    {lbl:'🌐 Web of Science', key:'wos',     fmt:n=>n?`<span style="color:var(--am);font-weight:600">${nt(n)}</span>`:'<span style="color:var(--t4)">–</span>',   total:totals.wos},
+    {lbl:'📚 Buku',           key:'bk',      fmt:n=>n?nt(n):'<span style="color:var(--t4)">–</span>',                                                              total:totals.bk},
+    {lbl:'🔭 Penelitian',     key:'res',     fmt:n=>n?nt(n):'<span style="color:var(--t4)">–</span>',                                                              total:totals.res},
+    {lbl:'🤝 Pengabdian',     key:'com',     fmt:n=>n?nt(n):'<span style="color:var(--t4)">–</span>',                                                              total:totals.com},
+    {lbl:'🏆 HKI / IPR',      key:'ipr',     fmt:n=>n?nt(n):'<span style="color:var(--t4)">–</span>',                                                              total:totals.ipr},
+    {lbl:'💬 Sitasi GS',      key:'cit',     fmt:n=>n?`<span style="font-weight:600">${nt(n)}</span>`:'<span style="color:var(--t4)">–</span>',                    total:totals.cit},
+    {lbl:'💰 Dana Penelitian', key:'resDana', fmt:n=>n?`<span style="color:var(--gr);font-size:11px">${'Rp '+Math.round(n/1e6)+'Jt'}</span>`:'<span style="color:var(--t4)">–</span>', total:totals.resDana},
+    {lbl:'💰 Dana Pengabdian', key:'comDana', fmt:n=>n?`<span style="color:var(--sk);font-size:11px">${'Rp '+Math.round(n/1e6)+'Jt'}</span>`:'<span style="color:var(--t4)">–</span>', total:totals.comDana},
+  ];
+
+  const divider=`<tr style="height:1px;background:var(--bd)"><td colspan="${yrs.length+2}" style="padding:0"></td></tr>`;
+
+  tbody.innerHTML=indicators.map((ind,idx)=>{
+    const cells=yrs.map(y=>{
+      const val=yData[y]?.[ind.key]||0;
+      const dim=!hasData(y);
+      return`<td style="text-align:right;${dim?'opacity:.3':''}font-family:'JetBrains Mono',monospace;font-size:12px">${ind.fmt(val)}</td>`;
+    }).join('');
+    const totalFmt = ind.key==='resDana'||ind.key==='comDana'
+      ? `<span style="font-weight:700;font-size:11px">${'Rp '+Math.round(ind.total/1e6)+'Jt'}</span>`
+      : `<span style="font-weight:700">${nt(ind.total)}</span>`;
+    const sep = idx===7 ? divider : ''; // garis sebelum Sitasi
+    return sep+`<tr style="${idx%2===0?'background:var(--bg3)':''}">
+      <td style="font-size:12.5px;font-weight:500;color:var(--t1);padding:9px 14px">${ind.lbl}</td>
+      ${cells}
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg3)">${totalFmt}</td>
+    </tr>`;
+  }).join('');
 }
 
 /* ── NAVIGATION ── */
