@@ -270,6 +270,30 @@ tbody tr:hover td{background:var(--bg3)}
     <div class="card"><div class="ch"><div><div class="ct">Google Scholar — Volume per Tahun</div></div></div><canvas id="cGsTr" height="200"></canvas></div>
     <div class="card"><div class="ch"><div><div class="ct">Garuda — Volume per Tahun</div></div></div><canvas id="cGarTr" height="200"></canvas></div>
   </div>
+  <div class="shd" style="margin-top:20px">Perkembangan Level Akreditasi SINTA per Tahun</div>
+  <div class="g2">
+    <div class="card">
+      <div class="ch"><div><div class="ct">Google Scholar — Tren Level S1–S6 per Tahun</div><div class="cs">Jumlah artikel per level akreditasi setiap tahun</div></div></div>
+      <canvas id="cGsLevelTr" height="210"></canvas>
+    </div>
+    <div class="card">
+      <div class="ch"><div><div class="ct">Garuda — Tren Level S1–S6 per Tahun</div><div class="cs">Jumlah artikel per level akreditasi setiap tahun</div></div></div>
+      <canvas id="cGarLevelTr" height="210"></canvas>
+    </div>
+  </div>
+  <div class="card" style="margin-top:13px">
+    <div class="ch"><div><div class="ct">Rekap Akreditasi SINTA per Tahun</div><div class="cs">Google Scholar &amp; Garuda — jumlah artikel per level per tahun</div></div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <span id="akredToggle" onclick="toggleAkredSource()" style="cursor:pointer;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--accent-light,var(--acl));color:var(--ac2);border:1px solid var(--ac2)">GS / Garuda</span>
+    </div></div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse" id="tAkredYear">
+        <thead id="thAkredYear"></thead>
+        <tbody id="tbAkredYear"></tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="shd" style="margin-top:20px">Daftar Google Scholar</div>
   <div class="tw" id="twGs"><div class="tth"><h3 id="gsTitle">Google Scholar</h3><div class="sb-inp">🔍<input type="text" placeholder="Cari..." oninput="srchPg('pgGs',this.value)"></div></div>
   <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Judul</th><th>Jurnal</th><th>Penulis</th><th>Akred</th><th style="text-align:right">Sitasi</th></tr></thead><tbody id="tGs"></tbody></table></div>
@@ -750,6 +774,157 @@ function buildPub(y){
   // Table with pagination
   const sorted=[...gs].sort((a,b)=>(+b.CITATION||0)-(+a.CITATION||0));
   initPg('pgGs',sorted,'renderGsTbl','tGs');
+  // Level trend charts & table
+  buildAkredTrend();
+}
+
+/* ── AKREDITASI LEVEL TREND ── */
+let _akredSrc='both'; // 'gs', 'garuda', 'both'
+function toggleAkredSource(){
+  const order=['both','gs','garuda'];
+  _akredSrc=order[(order.indexOf(_akredSrc)+1)%order.length];
+  const labels={'both':'GS + Garuda','gs':'Google Scholar','garuda':'Garuda'};
+  document.getElementById('akredToggle').textContent=labels[_akredSrc];
+  buildAkredTrend();
+}
+
+function buildAkredTrend(){
+  const yrs=gy().sort();
+  const LEVELS=['S1','S2','S3','S4','S5','S6'];
+  const LEVEL_COLORS={S1:C.gr,S2:C.sk,S3:C.vi,S4:C.am,S5:C.ro,S6:'#7f8fa6'};
+
+  // Hitung data per level per tahun untuk GS dan Garuda
+  function levelData(type){
+    return LEVELS.map(lv=>({
+      label:lv,
+      data:yrs.map(y=>{
+        const rows=DB.years[y]?.[type]||[];
+        return rows.filter(r=>(r.ACCREDITATION||'-')===lv).length;
+      }),
+      borderColor:LEVEL_COLORS[lv],
+      backgroundColor:LEVEL_COLORS[lv]+'22',
+      fill:false,
+      tension:.35,
+      pointRadius:4,
+      pointBackgroundColor:LEVEL_COLORS[lv],
+      borderWidth:2,
+    }));
+  }
+
+  function mergedData(){
+    return LEVELS.map(lv=>({
+      label:lv,
+      data:yrs.map(y=>{
+        const gs=DB.years[y]?.google||[];
+        const gar=DB.years[y]?.garuda||[];
+        return [...gs,...gar].filter(r=>(r.ACCREDITATION||'-')===lv).length;
+      }),
+      borderColor:LEVEL_COLORS[lv],
+      backgroundColor:LEVEL_COLORS[lv]+'22',
+      fill:false,
+      tension:.35,
+      pointRadius:4,
+      pointBackgroundColor:LEVEL_COLORS[lv],
+      borderWidth:2,
+    }));
+  }
+
+  const gsDatasets  = levelData('google');
+  const garDatasets = levelData('garuda');
+
+  // Chart GS
+  rc('cGsLevelTr','line',{labels:yrs,datasets:gsDatasets},
+    {...bo('right'),plugins:{...bo('right').plugins,
+      legend:{display:true,position:'right',labels:{color:'#6b7280',boxWidth:10,padding:10,font:{size:11}}}}});
+
+  // Chart Garuda
+  rc('cGarLevelTr','line',{labels:yrs,datasets:garDatasets},
+    {...bo('right'),plugins:{...bo('right').plugins,
+      legend:{display:true,position:'right',labels:{color:'#6b7280',boxWidth:10,padding:10,font:{size:11}}}}});
+
+  // Tabel rekap — baris = level, kolom = tahun
+  const thead=document.getElementById('thAkredYear');
+  const tbody=document.getElementById('tbAkredYear');
+  if(!thead||!tbody)return;
+
+  // Tentukan sumber data untuk tabel
+  function getRows(y){
+    if(_akredSrc==='gs')    return DB.years[y]?.google||[];
+    if(_akredSrc==='garuda')return DB.years[y]?.garuda||[];
+    return [...(DB.years[y]?.google||[]),...(DB.years[y]?.garuda||[])];
+  }
+
+  // Header: Level | 2019 | 2020 | ... | Total
+  thead.innerHTML=`<tr style="background:var(--bg3)">
+    <th style="padding:9px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);white-space:nowrap;border-bottom:1px solid var(--bd)">Level</th>
+    ${yrs.map(y=>`<th style="padding:9px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);text-align:right;border-bottom:1px solid var(--bd)">${y}</th>`).join('')}
+    <th style="padding:9px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);text-align:right;border-bottom:1px solid var(--bd);background:var(--bg3)">Total</th>
+  </tr>`;
+
+  // Hitung data
+  const tableData=LEVELS.map(lv=>{
+    const byYear=yrs.map(y=>getRows(y).filter(r=>(r.ACCREDITATION||'-')===lv).length);
+    const total=byYear.reduce((a,v)=>a+v,0);
+    return{lv,byYear,total};
+  });
+
+  // Baris per level + baris total + baris tidak terakreditasi
+  const noAkredData=yrs.map(y=>getRows(y).filter(r=>(r.ACCREDITATION||'-')==='-').length);
+  const noAkredTotal=noAkredData.reduce((a,v)=>a+v,0);
+  const totalPerYear=yrs.map((_,i)=>tableData.reduce((a,d)=>a+d.byYear[i],0)+noAkredData[i]);
+  const grandTotal=tableData.reduce((a,d)=>a+d.total,0)+noAkredTotal;
+
+  const tdStyle=(hasData)=>`padding:9px 14px;font-size:12px;text-align:right;border-bottom:1px solid var(--bd);font-family:'JetBrains Mono',monospace;${!hasData?'opacity:.35':''}`;
+  const lvStyle=`padding:9px 14px;font-size:12.5px;font-weight:600;border-bottom:1px solid var(--bd)`;
+
+  tbody.innerHTML=[
+    // Baris S1–S6
+    ...tableData.map((d,ri)=>{
+      const color=LEVEL_COLORS[d.lv];
+      const cells=d.byYear.map((v,i)=>{
+        const hasData=gy().includes(yrs[i]);
+        const pct=totalPerYear[i]>0?Math.round(v/totalPerYear[i]*100):0;
+        return`<td style="${tdStyle(hasData)}">
+          ${v?`<span style="color:${color};font-weight:700">${nt(v)}</span>
+          <div style="font-size:9px;color:var(--t4)">${pct}%</div>`
+          :'<span style="color:var(--t4)">–</span>'}
+        </td>`;
+      }).join('');
+      return`<tr style="${ri%2===0?'background:var(--bg3)':''}">
+        <td style="${lvStyle}">
+          <span style="display:inline-flex;align-items:center;gap:7px">
+            <span style="width:10px;height:10px;border-radius:2px;background:${color};flex-shrink:0"></span>
+            <span>${d.lv}</span>
+          </span>
+        </td>
+        ${cells}
+        <td style="${tdStyle(true)};background:var(--bg3)">
+          ${d.total?`<span style="font-weight:700;color:${color}">${nt(d.total)}</span>`:'<span style="color:var(--t4)">–</span>'}
+        </td>
+      </tr>`;
+    }),
+    // Baris tidak terakreditasi
+    `<tr style="background:var(--bg3)">
+      <td style="${lvStyle}"><span style="display:inline-flex;align-items:center;gap:7px">
+        <span style="width:10px;height:10px;border-radius:2px;background:var(--t4);flex-shrink:0"></span>
+        <span style="color:var(--t3)">Tidak Terakreditasi (–)</span>
+      </span></td>
+      ${noAkredData.map((v,i)=>{
+        const hasData=gy().includes(yrs[i]);
+        return`<td style="${tdStyle(hasData)}">${v?`<span style="color:var(--t3)">${nt(v)}</span>`:'<span style="color:var(--t4)">–</span>'}</td>`;
+      }).join('')}
+      <td style="${tdStyle(true)};background:var(--bg3)"><span style="color:var(--t3);font-weight:700">${nt(noAkredTotal)}</span></td>
+    </tr>`,
+    // Baris TOTAL
+    `<tr style="border-top:2px solid var(--bd2)">
+      <td style="${lvStyle};color:var(--t1);font-weight:700">TOTAL</td>
+      ${totalPerYear.map((v,i)=>{
+        const hasData=gy().includes(yrs[i]);
+        return`<td style="${tdStyle(hasData)};font-weight:700;color:var(--t1)">${v?nt(v):'<span style="color:var(--t4)">–</span>'}</td>`;
+      }).join('')}
+      <td style="${tdStyle(true)};background:var(--bg3);font-weight:700;color:var(--t1)">${nt(grandTotal)}</td>
+    </tr>`,
+  ].join('');
 }
 function renderGsTbl(pgId,tbodyId){
   const rows=pgData(pgId);
