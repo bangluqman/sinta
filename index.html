@@ -29,7 +29,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Plus Jakarta Sans',sans-s
 .logo-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--sbac);animation:blink 2s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
-.sb-nav{padding:10px 10px;flex:1;overflow-y:auto}
+.sb-nav{padding:10px 10px;flex:1;overflow-y:auto;overflow-x:hidden;min-height:0}
 .nl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.32);padding:10px 10px 4px}
 .ni{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--rs);cursor:pointer;font-size:12.5px;font-weight:500;color:var(--sbt);border:1px solid transparent;transition:all .15s;margin-bottom:1px}
 .ni:hover{background:rgba(255,255,255,.09);color:#fff}
@@ -39,15 +39,17 @@ body{background:var(--bg);color:var(--t1);font-family:'Plus Jakarta Sans',sans-s
 .ni.active .ni-cnt{background:var(--sba);color:var(--sbac)}
 
 /* SIDEBAR BOTTOM — year pills & theme */
-.sb-bot{padding:12px 12px 18px;border-top:1px solid rgba(255,255,255,.08)}
+.sb-bot{border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;flex-shrink:0;max-height:55%;min-height:0}
 .yl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:8px}
 .ypills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
-.ypills-wrap{padding:6px 12px 10px}
+.ypills-wrap{padding:6px 12px 8px;display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
 .ypills-label{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:7px}
 .ypills-ctrl{display:flex;gap:5px;margin-bottom:7px}
 .yp-ctrl{font-size:9.5px;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s;background:none;font-family:'JetBrains Mono',monospace}
 .yp-ctrl:hover{color:#fff;border-color:rgba(255,255,255,.5)}
-.ypills{display:flex;flex-direction:column;gap:4px}
+.ypills{display:flex;flex-direction:column;gap:4px;overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;padding-right:2px}
+.ypills::-webkit-scrollbar{width:3px}
+.ypills::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
 .yp{display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:var(--rs);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;font-size:12px;font-weight:500;position:relative}
 .yp:hover{background:rgba(255,255,255,.07);color:#fff;border-color:rgba(255,255,255,.25)}
 .yp.active{background:var(--sba);border-color:var(--sbac);color:var(--sbac)}
@@ -183,6 +185,8 @@ tbody tr:hover td{background:var(--bg3)}
 .hibah-table tbody tr:hover td{background:var(--bg3)}
 
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px}
+.sb-nav::-webkit-scrollbar{width:3px}
+.sb-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
 @media(max-width:1280px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr 1fr}}
 @media(max-width:960px){.sb{width:220px}.main{margin-left:220px;padding:18px 16px 60px}.g2,.g3e{grid-template-columns:1fr}.fg{grid-template-columns:repeat(2,1fr)}}
 </style>
@@ -235,11 +239,13 @@ tbody tr:hover td{background:var(--bg3)}
       <div class="ypills" id="ypills"></div>
       <div class="ypills-info" id="ypillsInfo"></div>
     </div>
-    <div class="tl" style="margin-top:12px">Tema</div>
-    <div class="tsw">
-      <div class="ts active" data-t="institutional" onclick="setTheme(this)" title="Clean Institutional"></div>
-      <div class="ts" data-t="academic" onclick="setTheme(this)" title="Warm Academic"></div>
-      <div class="ts" data-t="fresh" onclick="setTheme(this)" title="Fresh Research"></div>
+    <div style="padding:8px 12px 14px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0">
+      <div class="tl" style="margin-bottom:8px">Tema</div>
+      <div class="tsw">
+        <div class="ts active" data-t="institutional" onclick="setTheme(this)" title="Clean Institutional"></div>
+        <div class="ts" data-t="academic" onclick="setTheme(this)" title="Warm Academic"></div>
+        <div class="ts" data-t="fresh" onclick="setTheme(this)" title="Fresh Research"></div>
+      </div>
     </div>
   </div>
 </aside>
