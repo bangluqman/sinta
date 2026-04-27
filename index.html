@@ -42,9 +42,22 @@ body{background:var(--bg);color:var(--t1);font-family:'Plus Jakarta Sans',sans-s
 .sb-bot{padding:12px 12px 18px;border-top:1px solid rgba(255,255,255,.08)}
 .yl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:8px}
 .ypills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
-.yp{font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.65);cursor:pointer;transition:all .15s;font-weight:500}
-.yp:hover{border-color:rgba(255,255,255,.6);color:#fff;background:rgba(255,255,255,.08)}
-.yp.active{background:var(--sbac);border-color:var(--sbac);color:var(--sb);font-weight:700}
+.ypills-wrap{padding:6px 12px 10px}
+.ypills-label{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:7px}
+.ypills-ctrl{display:flex;gap:5px;margin-bottom:7px}
+.yp-ctrl{font-size:9.5px;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s;background:none;font-family:'JetBrains Mono',monospace}
+.yp-ctrl:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+.ypills{display:flex;flex-direction:column;gap:4px}
+.yp{display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:var(--rs);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;font-size:12px;font-weight:500;position:relative}
+.yp:hover{background:rgba(255,255,255,.07);color:#fff;border-color:rgba(255,255,255,.25)}
+.yp.active{background:var(--sba);border-color:var(--sbac);color:var(--sbac)}
+.yp-check{width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(255,255,255,.3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:9px}
+.yp.active .yp-check{background:var(--sbac);border-color:var(--sbac);color:var(--sb)}
+.yp-num{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.3)}
+.yp.active .yp-num{color:var(--sbac)}
+.yp-all{background:rgba(255,255,255,.05)}
+.yp-all.active{background:var(--sba);border-color:var(--sbac);color:var(--sbac)}
+.ypills-info{font-size:9.5px;color:rgba(255,255,255,.35);font-family:'JetBrains Mono',monospace;margin-top:5px;min-height:14px}
 .tl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:8px}
 .tsw{display:flex;gap:7px}
 .ts{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.2);transition:all .2s}
@@ -213,8 +226,15 @@ tbody tr:hover td{background:var(--bg3)}
     <a class="ni" href="konversi.html" target="_blank"><span class="ni-icon">🔄</span>Konversi xlsx → JSON</a>
   </nav>
   <div class="sb-bot">
-    <div class="yl">Filter Tahun</div>
-    <div class="ypills" id="ypills"><span class="yp active" data-year="all" onclick="setYear(this)">All</span></div>
+    <div class="ypills-wrap">
+      <div class="ypills-label">Filter Tahun</div>
+      <div class="ypills-ctrl">
+        <span class="yp-ctrl" onclick="selectAllYears()" title="Pilih semua tahun">Semua</span>
+        <span class="yp-ctrl" onclick="clearYears()" title="Hapus semua pilihan">Reset</span>
+      </div>
+      <div class="ypills" id="ypills"></div>
+      <div class="ypills-info" id="ypillsInfo"></div>
+    </div>
     <div class="tl" style="margin-top:12px">Tema</div>
     <div class="tsw">
       <div class="ts active" data-t="institutional" onclick="setTheme(this)" title="Clean Institutional"></div>
@@ -393,7 +413,7 @@ const C={gr:'#059669',sk:'#0284c7',vi:'#7c3aed',am:'#d97706',ro:'#e11d48',gy:'#9
 const PAL=[C.gr,C.sk,C.vi,C.am,C.ro,C.gy,C.te];
 
 /* ── STATE ── */
-const DB={years:{},loaded:{},active:'all'};
+const DB={years:{},loaded:{},active:'all',selected:new Set(['all'])};
 const YEARS=[2019,2020,2021,2022,2023,2024,2025,2026];
 let CH={};
 
@@ -589,6 +609,7 @@ function loadDemo(){
 /* ── HELPERS ── */
 function gr(type,year){
   if(year==='all')return YEARS.flatMap(y=>DB.years[y]?.[type]||[]);
+  if(Array.isArray(year))return year.flatMap(y=>DB.years[y]?.[type]||[]);
   return DB.years[year]?.[type]||[];
 }
 function gy(){return YEARS.filter(y=>DB.years[y]&&Object.keys(DB.years[y]).length>0);}
@@ -661,8 +682,27 @@ function onReady(){
 function buildPills(){
   const yrs=gy();
   const c=document.getElementById('ypills');
-  c.innerHTML=`<span class="yp active" data-year="all" onclick="setYear(this)">All</span>`;
-  yrs.forEach(y=>{const s=document.createElement('span');s.className='yp';s.dataset.year=y;s.textContent=y;s.onclick=function(){setYear(this);};c.appendChild(s);});
+  const totalPub=y=>((DB.years[y]?.google?.length||0)+(DB.years[y]?.garuda?.length||0));
+  c.innerHTML=`
+    <span class="yp yp-all active" data-year="all" onclick="toggleYear('all')">
+      <span class="yp-check">✓</span>
+      <span>Semua Tahun</span>
+    </span>
+    ${yrs.map(y=>`<span class="yp" data-year="${y}" onclick="toggleYear('${y}')">
+      <span class="yp-check"></span>
+      <span>${y}</span>
+      <span class="yp-num">${totalPub(y)||''}</span>
+    </span>`).join('')}`;
+  updatePillsInfo();
+}
+function updatePillsInfo(){
+  const info=document.getElementById('ypillsInfo');
+  if(!info)return;
+  if(DB.selected.has('all')){info.textContent='Semua tahun dipilih';return;}
+  const n=DB.selected.size;
+  if(n===0){info.textContent='Tidak ada tahun dipilih';return;}
+  const yrs=[...DB.selected].sort();
+  info.textContent=n===1?`Tahun ${yrs[0]}`:`${n} tahun: ${yrs.join(', ')}`;
 }
 function renderAll(){
   const y=DB.active;
@@ -677,7 +717,9 @@ function renderAll(){
 function buildKPI(y){
   const gs=gr('google',y),gar=gr('garuda',y),sc=gr('scopus',y),wos=gr('wos',y);
   const bk=gr('book',y),res=gr('research',y),com=gr('com',y),ipr=gr('ipr',y);
-  const py=y==='all'?null:parseInt(y)-1;
+  // Untuk multi-select: delta hanya ditampilkan jika 1 tahun dipilih
+  const isSingle=!Array.isArray(y)&&y!=='all';
+  const py=isSingle?parseInt(y)-1:null;
   function d(cur,prev){
     if(prev===null)return`<span class="kd dn">● Baru</span>`;
     const df=cur-prev,pct=prev>0?Math.round(df/prev*100):0;
@@ -685,7 +727,7 @@ function buildKPI(y){
     if(df<0)return`<span class="kd dd">↓ ${Math.abs(pct)>0?Math.abs(pct)+'%':Math.abs(df)}</span>`;
     return`<span class="kd df">= sama</span>`;
   }
-  const pv=k=>py?(DB.years[py]?.[k]?.length||0):null;
+  const pv=k=>(py&&isSingle)?(DB.years[py]?.[k]?.length||0):null;
   const data=[
     {em:'📄',tag:'Google Scholar',num:nt(gs.length),unit:'artikel',lbl:'Publikasi Google Scholar',c:'var(--ac2)',d:d(gs.length,pv('google'))},
     {em:'🗂',tag:'Garuda',num:nt(gar.length),unit:'artikel',lbl:'Publikasi Garuda',c:'var(--sk)',d:d(gar.length,pv('garuda'))},
@@ -1129,11 +1171,57 @@ function nav(el,page){
   el.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
 }
-function setYear(el){
-  document.querySelectorAll('.yp').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-  DB.active=el.dataset.year==='all'?'all':parseInt(el.dataset.year);
-  document.getElementById('chipYear').textContent=el.dataset.year==='all'?'All Years':`Tahun ${el.dataset.year}`;
+function toggleYear(year){
+  if(year==='all'){
+    // Klik All → aktifkan all, deselect semua tahun spesifik
+    DB.selected=new Set(['all']);
+    DB.active='all';
+  } else {
+    const y=parseInt(year);
+    if(DB.selected.has('all')){
+      // Transisi dari All ke pilihan spesifik
+      DB.selected=new Set([y]);
+    } else if(DB.selected.has(y)){
+      // Toggle off — jika hanya 1 tersisa, kembali ke All
+      DB.selected.delete(y);
+      if(DB.selected.size===0) DB.selected=new Set(['all']);
+    } else {
+      // Toggle on
+      DB.selected.add(y);
+    }
+    DB.active=DB.selected.has('all')?'all':[...DB.selected];
+  }
+  // Update visual pills
+  document.querySelectorAll('.yp').forEach(p=>{
+    const py=p.dataset.year;
+    const isActive=(py==='all'&&DB.selected.has('all'))||(py!=='all'&&DB.selected.has(parseInt(py)));
+    p.classList.toggle('active',isActive);
+    const chk=p.querySelector('.yp-check');
+    if(chk)chk.textContent=isActive?'✓':'';
+  });
+  // Update chip
+  const chip=document.getElementById('chipYear');
+  if(chip){
+    if(DB.selected.has('all')) chip.textContent='All Years';
+    else if(DB.selected.size===1) chip.textContent=`Tahun ${[...DB.selected][0]}`;
+    else chip.textContent=`${DB.selected.size} tahun dipilih`;
+  }
+  updatePillsInfo();
+  renderAll();
+}
+function selectAllYears(){toggleYear('all');}
+function clearYears(){
+  // Reset ke All
+  DB.selected=new Set(['all']);
+  DB.active='all';
+  document.querySelectorAll('.yp').forEach(p=>{
+    const isAll=p.dataset.year==='all';
+    p.classList.toggle('active',isAll);
+    const chk=p.querySelector('.yp-check');
+    if(chk)chk.textContent=isAll?'✓':'';
+  });
+  document.getElementById('chipYear').textContent='All Years';
+  updatePillsInfo();
   renderAll();
 }
 function setTheme(el){
