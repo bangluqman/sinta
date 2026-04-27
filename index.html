@@ -29,7 +29,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Plus Jakarta Sans',sans-s
 .logo-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--sbac);animation:blink 2s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
-.sb-nav{padding:10px 10px;flex:1;overflow-y:auto;overflow-x:hidden;min-height:0}
+.sb-nav{padding:10px 10px;flex:1;overflow-y:auto}
 .nl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.32);padding:10px 10px 4px}
 .ni{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--rs);cursor:pointer;font-size:12.5px;font-weight:500;color:var(--sbt);border:1px solid transparent;transition:all .15s;margin-bottom:1px}
 .ni:hover{background:rgba(255,255,255,.09);color:#fff}
@@ -39,27 +39,11 @@ body{background:var(--bg);color:var(--t1);font-family:'Plus Jakarta Sans',sans-s
 .ni.active .ni-cnt{background:var(--sba);color:var(--sbac)}
 
 /* SIDEBAR BOTTOM — year pills & theme */
-.sb-bot{border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;flex-shrink:0;max-height:55%;min-height:0}
+.sb-bot{border-top:1px solid rgba(255,255,255,.08);flex-shrink:0}
 .yl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:8px}
 .ypills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
-.ypills-wrap{padding:6px 12px 8px;display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
-.ypills-label{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:7px}
-.ypills-ctrl{display:flex;gap:5px;margin-bottom:7px}
-.yp-ctrl{font-size:9.5px;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s;background:none;font-family:'JetBrains Mono',monospace}
-.yp-ctrl:hover{color:#fff;border-color:rgba(255,255,255,.5)}
-.ypills{display:flex;flex-direction:column;gap:4px;overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;padding-right:2px}
-.ypills::-webkit-scrollbar{width:3px}
-.ypills::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
-.yp{display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:var(--rs);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;font-size:12px;font-weight:500;position:relative}
-.yp:hover{background:rgba(255,255,255,.07);color:#fff;border-color:rgba(255,255,255,.25)}
-.yp.active{background:var(--sba);border-color:var(--sbac);color:var(--sbac)}
-.yp-check{width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(255,255,255,.3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:9px}
-.yp.active .yp-check{background:var(--sbac);border-color:var(--sbac);color:var(--sb)}
-.yp-num{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.3)}
-.yp.active .yp-num{color:var(--sbac)}
-.yp-all{background:rgba(255,255,255,.05)}
-.yp-all.active{background:var(--sba);border-color:var(--sbac);color:var(--sbac)}
-.ypills-info{font-size:9.5px;color:rgba(255,255,255,.35);font-family:'JetBrains Mono',monospace;margin-top:5px;min-height:14px}
+/* year pills → moved to topbar */
+/* yp style → see YEAR FILTER TOPBAR CSS */
 .tl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:8px}
 .tsw{display:flex;gap:7px}
 .ts{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.2);transition:all .2s}
@@ -185,8 +169,49 @@ tbody tr:hover td{background:var(--bg3)}
 .hibah-table tbody tr:hover td{background:var(--bg3)}
 
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px}
-.sb-nav::-webkit-scrollbar{width:3px}
-.sb-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+
+/* ── YEAR FILTER TOPBAR ── */
+.yfilter-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);
+  padding:9px 16px;margin-bottom:20px;
+  box-shadow:var(--sh);gap:12px;flex-wrap:wrap;
+  position:sticky;top:0;z-index:100;
+}
+.yfilter-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap;min-width:0}
+.yfilter-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.yfilter-icon{font-size:14px;flex-shrink:0}
+.yfilter-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);white-space:nowrap;flex-shrink:0}
+.yfilter-pills{display:flex;gap:5px;flex-wrap:wrap}
+.yp{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 11px;border-radius:20px;
+  border:1px solid var(--bd2);background:var(--bg3);
+  color:var(--t3);cursor:pointer;transition:all .15s;
+  font-size:11.5px;font-weight:500;font-family:'JetBrains Mono',monospace;
+  user-select:none;white-space:nowrap;
+}
+.yp:hover{border-color:var(--ac2);color:var(--ac2);background:var(--acl)}
+.yp.active{
+  background:var(--ac2);border-color:var(--ac2);color:#fff;font-weight:700;
+  box-shadow:0 2px 6px rgba(37,99,235,.25);
+}
+.yp-all{font-weight:600}
+.yp-all.active{background:var(--t1);border-color:var(--t1);color:#fff}
+.yp-check{font-size:9px;line-height:1}
+.yp-num{font-size:9.5px;opacity:.65}
+.yf-btn{
+  padding:4px 12px;border-radius:20px;border:1px solid var(--bd2);
+  background:var(--bg3);color:var(--t3);cursor:pointer;
+  font-size:11px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;
+  transition:all .15s;
+}
+.yf-btn:hover{border-color:var(--ac2);color:var(--ac2);background:var(--acl)}
+.yfilter-info{
+  font-size:11px;color:var(--t3);font-family:'JetBrains Mono',monospace;
+  background:var(--bg3);border:1px solid var(--bd);border-radius:20px;
+  padding:3px 10px;white-space:nowrap;
+}
 @media(max-width:1280px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr 1fr}}
 @media(max-width:960px){.sb{width:220px}.main{margin-left:220px;padding:18px 16px 60px}.g2,.g3e{grid-template-columns:1fr}.fg{grid-template-columns:repeat(2,1fr)}}
 </style>
@@ -230,16 +255,7 @@ tbody tr:hover td{background:var(--bg3)}
     <a class="ni" href="konversi.html" target="_blank"><span class="ni-icon">🔄</span>Konversi xlsx → JSON</a>
   </nav>
   <div class="sb-bot">
-    <div class="ypills-wrap">
-      <div class="ypills-label">Filter Tahun</div>
-      <div class="ypills-ctrl">
-        <span class="yp-ctrl" onclick="selectAllYears()" title="Pilih semua tahun">Semua</span>
-        <span class="yp-ctrl" onclick="clearYears()" title="Hapus semua pilihan">Reset</span>
-      </div>
-      <div class="ypills" id="ypills"></div>
-      <div class="ypills-info" id="ypillsInfo"></div>
-    </div>
-    <div style="padding:8px 12px 14px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0">
+    <div style="padding:10px 12px 14px">
       <div class="tl" style="margin-bottom:8px">Tema</div>
       <div class="tsw">
         <div class="ts active" data-t="institutional" onclick="setTheme(this)" title="Clean Institutional"></div>
@@ -251,6 +267,20 @@ tbody tr:hover td{background:var(--bg3)}
 </aside>
 
 <main class="main">
+
+<!-- YEAR FILTER TOPBAR -->
+<div class="yfilter-bar" id="yfilterBar">
+  <div class="yfilter-left">
+    <span class="yfilter-icon">📅</span>
+    <span class="yfilter-label">Tahun:</span>
+    <div class="yfilter-pills" id="ypills"></div>
+  </div>
+  <div class="yfilter-right">
+    <button class="yf-btn" onclick="selectAllYears()">Semua</button>
+    <button class="yf-btn" onclick="clearYears()">Reset</button>
+    <div class="yfilter-info" id="ypillsInfo"></div>
+  </div>
+</div>
 
 <!-- OVERVIEW -->
 <div id="page-overview" class="page active">
@@ -688,27 +718,23 @@ function onReady(){
 function buildPills(){
   const yrs=gy();
   const c=document.getElementById('ypills');
-  const totalPub=y=>((DB.years[y]?.google?.length||0)+(DB.years[y]?.garuda?.length||0));
-  c.innerHTML=`
-    <span class="yp yp-all active" data-year="all" onclick="toggleYear('all')">
-      <span class="yp-check">✓</span>
-      <span>Semua Tahun</span>
-    </span>
-    ${yrs.map(y=>`<span class="yp" data-year="${y}" onclick="toggleYear('${y}')">
-      <span class="yp-check"></span>
-      <span>${y}</span>
-      <span class="yp-num">${totalPub(y)||''}</span>
-    </span>`).join('')}`;
+  if(!c)return;
+  const totalPub=y=>{const n=(DB.years[y]?.google?.length||0)+(DB.years[y]?.garuda?.length||0);return n?n:'';};
+  c.innerHTML=
+    `<span class="yp yp-all active" data-year="all" onclick="toggleYear('all')">Semua</span>`+
+    yrs.map(y=>`<span class="yp" data-year="${y}" onclick="toggleYear('${y}')">
+      ${y}<span class="yp-num">${totalPub(y)?'&nbsp;'+totalPub(y):''}</span>
+    </span>`).join('');
   updatePillsInfo();
 }
 function updatePillsInfo(){
   const info=document.getElementById('ypillsInfo');
   if(!info)return;
-  if(DB.selected.has('all')){info.textContent='Semua tahun dipilih';return;}
+  if(DB.selected.has('all')){info.textContent='Semua tahun';return;}
   const n=DB.selected.size;
-  if(n===0){info.textContent='Tidak ada tahun dipilih';return;}
+  if(n===0){info.textContent='–';return;}
   const yrs=[...DB.selected].sort();
-  info.textContent=n===1?`Tahun ${yrs[0]}`:`${n} tahun: ${yrs.join(', ')}`;
+  info.textContent=n===1?`${yrs[0]}`:`${n} tahun dipilih`;
 }
 function renderAll(){
   const y=DB.active;
@@ -1202,8 +1228,6 @@ function toggleYear(year){
     const py=p.dataset.year;
     const isActive=(py==='all'&&DB.selected.has('all'))||(py!=='all'&&DB.selected.has(parseInt(py)));
     p.classList.toggle('active',isActive);
-    const chk=p.querySelector('.yp-check');
-    if(chk)chk.textContent=isActive?'✓':'';
   });
   // Update chip
   const chip=document.getElementById('chipYear');
@@ -1221,10 +1245,7 @@ function clearYears(){
   DB.selected=new Set(['all']);
   DB.active='all';
   document.querySelectorAll('.yp').forEach(p=>{
-    const isAll=p.dataset.year==='all';
-    p.classList.toggle('active',isAll);
-    const chk=p.querySelector('.yp-check');
-    if(chk)chk.textContent=isAll?'✓':'';
+    p.classList.toggle('active',p.dataset.year==='all');
   });
   document.getElementById('chipYear').textContent='All Years';
   updatePillsInfo();
